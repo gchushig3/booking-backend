@@ -16,4 +16,11 @@ export class PaginationQueryDto {
   @IsInt()
   @Min(1)
   limit?: number = 10;
+
+  @ApiPropertyOptional({ description: 'Desplazamiento inicial', default: 0, minimum: 0 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  offset?: number = 0;
 }

@@ -1,5 +1,7 @@
-import { Column, Entity, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, DeleteDateColumn } from 'typeorm';
+import { Column, Entity, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, DeleteDateColumn, OneToMany } from 'typeorm';
 import { ColumnNumericTransformer } from '../../../common/transformers/column-numeric.transformer';
+import { Reserva } from './reserva.entity';
+import { ProductType } from '../dto/create-atraccion.dto';
 
 @Entity('atracciones')
 export class Atraccion {
@@ -14,6 +16,24 @@ export class Atraccion {
 
   @Column({ type: 'varchar', length: 100 })
   ciudad: string;
+
+  @Column({ type: 'jsonb', nullable: true })
+  price: { currency: string; total: number } | null;
+
+  @Column({ type: 'jsonb', nullable: true })
+  operator: { id: number; name: string } | null;
+
+  @Column({ type: 'varchar', default: ProductType.SINGLE_TICKET })
+  product_type: ProductType;
+
+  @Column({ type: 'jsonb', nullable: true })
+  categories: string[] | null;
+
+  @Column({ type: 'jsonb', nullable: true })
+  includes: string[] | null;
+
+  @Column({ type: 'jsonb', nullable: true })
+  supported_languages: string[] | null;
 
   @Column('numeric', {
     precision: 10,
@@ -41,6 +61,58 @@ export class Atraccion {
 
   @Column({ type: 'boolean', default: true })
   estaActivo: boolean;
+
+  get name(): string {
+    return this.nombre;
+  }
+
+  set name(value: string) {
+    this.nombre = value;
+  }
+
+  get long_description(): string {
+    return this.descripcion;
+  }
+
+  set long_description(value: string) {
+    this.descripcion = value;
+  }
+
+  get duration(): string {
+    return this.duracionHoras ? `PT${this.duracionHoras}H` : 'PT2H';
+  }
+
+  set duration(value: string) {
+    const match = value?.match(/PT(?:(\d+)H)?/i);
+    this.duracionHoras = match && match[1] ? Number(match[1]) : 2;
+  }
+
+  get free_cancellation(): boolean {
+    return this.estaActivo;
+  }
+
+  set free_cancellation(value: boolean) {
+    this.estaActivo = value;
+  }
+
+  get photos(): any[] {
+    return [];
+  }
+
+  set photos(value: any[]) {
+    void value;
+  }
+
+  get locations(): any[] {
+    return [];
+  }
+
+  set locations(value: any[]) {
+    void value;
+  }
+
+  @OneToMany(() => Reserva, (reserva) => reserva.atraccion)
+  reservas: Reserva[];
 
   @CreateDateColumn({ type: 'timestamp' })
   createdAt: Date;

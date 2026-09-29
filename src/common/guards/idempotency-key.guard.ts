@@ -17,7 +17,7 @@ import { Request } from 'express';
 export class IdempotencyKeyGuard implements CanActivate {
   // Expresión regular para validar UUID v4 (formato requerido por los contratos YAML)
   private static readonly UUID_REGEX =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<Request>();

@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsBoolean, IsNumber, IsOptional, IsPositive, IsString, IsEnum, IsArray, IsUrl, Min, MinLength } from 'class-validator';
+import { IsBoolean, IsOptional, IsString, IsEnum, IsArray, ValidateNested, MinLength } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PriceDto, LocationDto, PhotoDto, OperatorDto } from './nested-types.dto';
 
@@ -24,13 +24,17 @@ export class CreateAtraccionDto {
   @IsString()
   duration: string;
 
-  @ApiProperty({ description: 'Precio de la atracción', type: PriceDto })
+  @ApiProperty({ description: 'Precio de la atracción', type: PriceDto, required: false })
+  @IsOptional()
+  @ValidateNested()
   @Type(() => PriceDto)
-  price: PriceDto;
+  price?: PriceDto;
 
-  @ApiProperty({ description: 'Empresa operadora del tour', type: OperatorDto })
+  @ApiProperty({ description: 'Empresa operadora del tour', type: OperatorDto, required: false })
+  @IsOptional()
+  @ValidateNested()
   @Type(() => OperatorDto)
-  operator: OperatorDto;
+  operator?: OperatorDto;
 
   @ApiProperty({ description: 'Tipo de producto', enum: ProductType, example: ProductType.GUIDED_TOUR })
   @IsEnum(ProductType)

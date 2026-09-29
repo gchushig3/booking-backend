@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Put, Param, Delete, ParseUUIDPipe, Res, HttpCode, HttpStatus, Query, Header, Headers, HttpException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Put, Param, Delete, ParseUUIDPipe, Res, HttpCode, HttpStatus, Query, Header, Headers, HttpException, BadRequestException } from '@nestjs/common';
 import { Response } from 'express';
 import { AtraccionesService } from './atracciones.service';
 import { CreateAtraccionDto } from './dto/create-atraccion.dto';
@@ -16,7 +16,15 @@ import { ReservationRequestDto, ReservationResponseDto, CancelReservationRequest
 @ApiTags('Atracciones')
 @Controller('atracciones')
 export class AtraccionesController {
+  private readonly uuidV4Regex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
   constructor(private readonly atraccionesService: AtraccionesService) {}
+
+  private validateIdempotencyKey(idempotencyKey: string): void {
+    if (!idempotencyKey || !this.uuidV4Regex.test(idempotencyKey)) {
+      throw new BadRequestException('El encabezado Idempotency-Key debe ser un UUID v4 válido');
+    }
+  }
 
   @Post('search')
   @HttpCode(HttpStatus.OK)
@@ -39,13 +47,13 @@ export class AtraccionesController {
   @ApiOperation({ summary: 'Registrar una nueva atracción' })
   @ApiResponse({ status: 201, description: 'La atracción ha sido creada exitosamente. Devuelve cabecera Location.', type: AtraccionResponseDto })
   @ApiResponse({ status: 400, description: 'Bad Request. Datos de entrada inválidos.' })
-  create(
+  async create(
     @Body() createAtraccionDto: CreateAtraccionDto,
     @Res({ passthrough: true }) res: Response
-  ): AtraccionResponseDto {
-    const atraccion = this.atraccionesService.create(createAtraccionDto);
+  ): Promise<AtraccionResponseDto> {
+    const atraccion = await this.atraccionesService.create(createAtraccionDto);
     res.setHeader('Location', `/api/v1/atracciones/${atraccion.id || 'uuid-generado'}`);
-    return atraccion;
+    return atraccion as unknown as AtraccionResponseDto;
   }
 
   @Get()
@@ -64,6 +72,22 @@ export class AtraccionesController {
     return { status: 'UP', timestamp: new Date().toISOString() };
   }
 
+  @Get('reservations')
+  @ApiOperation({ summary: 'Consultar el historial de reservas del usuario' })
+  @ApiResponse({ status: 200, description: 'Listado de reservas.' })
+  async getReservations(): Promise<ReservationResponseDto[]> {
+    return await this.atraccionesService.getReservations();
+  }
+
+  @Get('reservations/:reservationId')
+  @ApiOperation({ summary: 'Obtener detalle de una reserva específica' })
+  @ApiParam({ name: 'reservationId', description: 'ID de la reserva', type: 'string', format: 'uuid' })
+  @ApiResponse({ status: 200, description: 'Detalle de la reserva.', type: ReservationResponseDto })
+  @ApiResponse({ status: 404, description: 'Reserva no encontrada.' })
+  async getReservationById(@Param('reservationId', ParseUUIDPipe) reservationId: string): Promise<ReservationResponseDto> {
+    return await this.atraccionesService.getReservationById(reservationId);
+  }
+
   @Get(':id')
   @Header('X-API-Deprecation-Date', '2027-12-31')
   @Header('Cache-Control', 'max-age=300')
@@ -71,31 +95,8 @@ export class AtraccionesController {
   @ApiParam({ name: 'id', description: 'UUID de la atracción', type: 'string', format: 'uuid' })
   @ApiResponse({ status: 200, description: 'Detalle de la atracción.', type: AtraccionResponseDto })
   @ApiResponse({ status: 404, description: 'Not Found. La atracción no existe.' })
-  findOne(@Param('id', ParseUUIDPipe) id: string): AtraccionResponseDto {
-    return this.atraccionesService.findOne(id);
-  }
-
-  @Put(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Reemplazar datos de una atracción' })
-  @ApiParam({ name: 'id', description: 'UUID de la atracción', type: 'string', format: 'uuid' })
-  async replace(@Param('id', ParseUUIDPipe) id: string, @Body() dto: CreateAtraccionDto) {
-    return this.atraccionesService.replace(id, dto);
-  }
-
-  @Patch(':id')
-  @ApiOperation({ summary: 'Actualizar parcialmente una atracción' })
-  @ApiParam({ name: 'id', description: 'UUID de la atracción', type: 'string', format: 'uuid' })
-  async update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateAtraccionDto) {
-    return this.atraccionesService.update(id, dto);
-  }
-
-  @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Eliminar una atracción' })
-  @ApiParam({ name: 'id', description: 'UUID de la atracción', type: 'string', format: 'uuid' })
-  async delete(@Param('id', ParseUUIDPipe) id: string) {
-    return this.atraccionesService.delete(id);
+  async findOne(@Param('id', ParseUUIDPipe) id: string): Promise<AtraccionResponseDto> {
+    return (await this.atraccionesService.findOne(id)) as unknown as AtraccionResponseDto;
   }
 
   @Get(':id/availability')
@@ -103,11 +104,11 @@ export class AtraccionesController {
   @ApiParam({ name: 'id', description: 'UUID de la atracción', type: 'string', format: 'uuid' })
   @ApiResponse({ status: 200, description: 'Disponibilidad recuperada exitosamente.', type: AvailabilityResponseDto })
   @ApiResponse({ status: 404, description: 'Not Found. La atracción no existe.' })
-  getAvailability(
+  async getAvailability(
     @Param('id', ParseUUIDPipe) id: string,
     @Query('date') date: string
-  ): AvailabilityResponseDto {
-    return this.atraccionesService.getAvailability(id, date);
+  ): Promise<AvailabilityResponseDto> {
+    return await this.atraccionesService.getAvailability(id, date);
   }
 
   @Post(':id/reservations')
@@ -118,15 +119,18 @@ export class AtraccionesController {
   @ApiResponse({ status: 400, description: 'Bad Request.' })
   @ApiResponse({ status: 404, description: 'Not Found.' })
   @ApiResponse({ status: 409, description: 'Conflicto de Idempotencia.' })
-  reserve(
+  async reserve(
     @Param('id', ParseUUIDPipe) id: string,
     @Headers('idempotency-key') idempotencyKey: string,
     @Body() reservationDto: ReservationRequestDto
-  ): ReservationResponseDto {
+  ): Promise<ReservationResponseDto> {
     if (!idempotencyKey) {
       throw new HttpException('Idempotency-Key header is required', HttpStatus.BAD_REQUEST);
     }
-    return this.atraccionesService.reserve(id, reservationDto, idempotencyKey);
+
+    this.validateIdempotencyKey(idempotencyKey);
+
+    return await this.atraccionesService.reserve(id, reservationDto, idempotencyKey);
   }
 
   @Post('reservations/:reservationId/cancel')
@@ -135,31 +139,18 @@ export class AtraccionesController {
   @ApiParam({ name: 'reservationId', description: 'ID de la reserva a cancelar', type: 'string', format: 'uuid' })
   @ApiResponse({ status: 200, description: 'Reserva cancelada exitosamente.', type: ReservationResponseDto })
   @ApiResponse({ status: 409, description: 'Conflicto de Idempotencia.' })
-  cancelReservation(
+  async cancelReservation(
     @Param('reservationId', ParseUUIDPipe) reservationId: string,
     @Headers('idempotency-key') idempotencyKey: string,
     @Body() dto: CancelReservationRequestDto
-  ): ReservationResponseDto {
+  ): Promise<ReservationResponseDto> {
     if (!idempotencyKey) {
       throw new HttpException('Idempotency-Key header is required', HttpStatus.BAD_REQUEST);
     }
-    return this.atraccionesService.cancelReservation(reservationId, dto, idempotencyKey);
-  }
 
-  @Get('reservations')
-  @ApiOperation({ summary: 'Consultar el historial de reservas del usuario' })
-  @ApiResponse({ status: 200, description: 'Listado de reservas.' })
-  getReservations(): ReservationResponseDto[] {
-    return this.atraccionesService.getReservations();
-  }
+    this.validateIdempotencyKey(idempotencyKey);
 
-  @Get('reservations/:reservationId')
-  @ApiOperation({ summary: 'Obtener detalle de una reserva específica' })
-  @ApiParam({ name: 'reservationId', description: 'ID de la reserva', type: 'string', format: 'uuid' })
-  @ApiResponse({ status: 200, description: 'Detalle de la reserva.', type: ReservationResponseDto })
-  @ApiResponse({ status: 404, description: 'Reserva no encontrada.' })
-  getReservationById(@Param('reservationId', ParseUUIDPipe) reservationId: string): ReservationResponseDto {
-    return this.atraccionesService.getReservationById(reservationId);
+    return await this.atraccionesService.cancelReservation(reservationId, dto, idempotencyKey);
   }
 
   @Put(':id')
@@ -182,11 +173,11 @@ export class AtraccionesController {
   @ApiResponse({ status: 200, description: 'La atracción ha sido actualizada.', type: AtraccionResponseDto })
   @ApiResponse({ status: 400, description: 'Bad Request. Datos de entrada inválidos.' })
   @ApiResponse({ status: 404, description: 'Not Found. La atracción no existe.' })
-  update(
+  async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateAtraccionDto: UpdateAtraccionDto,
-  ): AtraccionResponseDto {
-    return this.atraccionesService.update(id, updateAtraccionDto);
+  ): Promise<AtraccionResponseDto> {
+    return (await this.atraccionesService.update(id, updateAtraccionDto)) as unknown as AtraccionResponseDto;
   }
 
   @Delete(':id')

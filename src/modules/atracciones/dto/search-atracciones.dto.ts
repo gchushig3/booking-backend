@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsDateString, IsInt, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { IsArray, IsDateString, IsEnum, IsInt, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
+import { ProductType } from './create-atraccion.dto';
 
 export class DatesFilterDto {
   @ApiProperty({ description: 'Fecha de inicio', example: '2025-12-18' })
@@ -77,4 +78,9 @@ export class SearchAtraccionesDto {
   @ValidateNested()
   @Type(() => SortDto)
   sort: SortDto;
+
+  @ApiProperty({ description: 'Filtra por tipo de producto', enum: ProductType, required: false, example: ProductType.SINGLE_TICKET })
+  @IsEnum(ProductType)
+  @IsOptional()
+  product_type?: ProductType;
 }

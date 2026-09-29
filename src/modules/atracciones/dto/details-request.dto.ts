@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsEnum, IsOptional, IsString } from 'class-validator';
+import { ProductType } from './create-atraccion.dto';
 
 export class DetailsRequestDto {
   @ApiProperty({ description: 'Array de IDs de atracciones', example: ['PRahAzWtTraa'] })
@@ -12,4 +13,9 @@ export class DetailsRequestDto {
   @IsString({ each: true })
   @IsOptional()
   languages?: string[];
+
+  @ApiProperty({ description: 'Filtra por tipo de producto', enum: ProductType, required: false, example: ProductType.GUIDED_TOUR })
+  @IsEnum(ProductType)
+  @IsOptional()
+  product_type?: ProductType;
 }
