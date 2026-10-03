@@ -1,22 +1,26 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
 import { CommonModule } from './common/common.module';
 // import { AlojamientosModule } from './modules/alojamientos/alojamientos.module';
 // import { AutosModule } from './modules/autos/autos.module';
 import { AtraccionesModule } from './modules/atracciones/atracciones.module';
+import { JwtAuthGuard } from './common/auth/jwt-auth.guard';
+import { JwtStrategy } from './common/auth/jwt.strategy';
+import { RolesGuard } from './common/auth/roles.guard';
 // import { VuelosModule } from './modules/vuelos/vuelos.module';
 
 @Module({
   imports: [
-    // Carga de variables de entorno globales
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
     }),
+    ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
 
-    // Configuración centralizada de TypeORM usando DATABASE_URL
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -24,22 +28,28 @@ import { AtraccionesModule } from './modules/atracciones/atracciones.module';
         type: 'postgres',
         url: configService.get<string>('DATABASE_URL'),
         autoLoadEntities: true,
-        synchronize: configService.get<string>('NODE_ENV') !== 'production', // Precaución en producción
+        synchronize: configService.get<string>('NODE_ENV') !== 'production',
       }),
     }),
 
-    // Módulos Compartidos
     CommonModule,
-
-    // =========================================================================
-    // ATENCIÓN ALUMNO: Descomenta solo el módulo que corresponde a tu grupo
-    // =========================================================================
-    // AlojamientosModule,
-    // AutosModule,
     AtraccionesModule,
-    // VuelosModule,
   ],
   controllers: [],
-  providers: [],
+  providers: [
+    JwtStrategy,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
+    },
+  ],
 })
 export class AppModule {}

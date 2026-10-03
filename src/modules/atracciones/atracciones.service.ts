@@ -1,13 +1,18 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 
 import { Atraccion } from './entities/atraccion.entity';
 import { Reserva } from './entities/reserva.entity';
 
+export interface AuthenticatedUser {
+  id: string;
+  role?: string;
+}
+
 import { CreateAtraccionDto, ProductType } from './dto/create-atraccion.dto';
 import { UpdateAtraccionDto } from './dto/update-atraccion.dto';
-import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
+import { GetAtraccionesFilterDto } from './dto/get-atracciones-filter.dto';
 import { SearchAtraccionesDto } from './dto/search-atracciones.dto';
 import { DetailsRequestDto } from './dto/details-request.dto';
 import { AvailabilityResponseDto } from './dto/availability.dto';
@@ -202,12 +207,25 @@ export class AtraccionesService {
     return await this.atraccionRepository.save(nuevaAtraccion);
   }
 
-  async findAll(query: PaginationQueryDto): Promise<Atraccion[]> {
-    const { limit = 10, offset = 0 } = query;
-    return await this.atraccionRepository.find({
+  async findAll(query: GetAtraccionesFilterDto): Promise<{
+    data: Atraccion[];
+    meta: { total: number; page: number; lastPage: number };
+  }> {
+    const { page = 1, limit = 10, product_type } = query;
+    const [data, total] = await this.atraccionRepository.findAndCount({
+      where: product_type ? { product_type } : {},
       take: limit,
-      skip: offset,
+      skip: (page - 1) * limit,
     });
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        lastPage: Math.ceil(total / limit),
+      },
+    };
   }
 
   async findOne(id: string): Promise<Atraccion> {
@@ -308,6 +326,7 @@ export class AtraccionesService {
     id: string,
     dto: ReservationRequestDto,
     idempotencyKey: string,
+    user: AuthenticatedUser,
   ): Promise<ReservationResponseDto> {
     const atraccion = await this.findOne(id);
 
@@ -331,6 +350,7 @@ export class AtraccionesService {
     });
 
     if (reservaExistente) {
+      this.assertReservationOwner(reservaExistente, user);
       return this.buildReservationResponse(reservaExistente);
     }
 
@@ -350,6 +370,7 @@ export class AtraccionesService {
       customer_name: dto.customer_name,
       customer_email: dto.customer_email,
       status: 'CONFIRMED',
+      userId: user.id,
       atraccion,
     });
 
@@ -361,6 +382,7 @@ export class AtraccionesService {
     reservationId: string,
     dto: CancelReservationRequestDto,
     idempotencyKey: string,
+    user: AuthenticatedUser,
   ): Promise<ReservationResponseDto> {
     this.validateIdempotencyKey(idempotencyKey);
 
@@ -374,6 +396,10 @@ export class AtraccionesService {
     });
 
     if (reservaPorKey) {
+      this.assertReservationOwner(reservaPorKey, user);
+      if (reservaPorKey.id !== reservationId) {
+        throw new BadRequestException('La clave de idempotencia no corresponde a esta reserva');
+      }
       if (reservaPorKey.status === 'CANCELLED') {
         return this.buildReservationResponse(reservaPorKey);
       }
@@ -392,6 +418,8 @@ export class AtraccionesService {
       throw new NotFoundException(`Reserva con ID ${reservationId} no encontrada`);
     }
 
+    this.assertReservationOwner(reserva, user);
+
     if (reserva.status === 'CANCELLED') {
       return this.buildReservationResponse(reserva);
     }
@@ -401,12 +429,21 @@ export class AtraccionesService {
     return this.buildReservationResponse(reserva);
   }
 
-  async getReservations(): Promise<ReservationResponseDto[]> {
-    const reservas = await this.reservaRepository.find({ relations: ['atraccion'] });
+  private assertReservationOwner(reserva: Reserva, user: AuthenticatedUser): void {
+    if (user.role !== 'ADMIN' && reserva.userId !== user.id) {
+      throw new ForbiddenException('No tiene permiso para acceder a esta reserva');
+    }
+  }
+
+  async getReservations(user: AuthenticatedUser): Promise<ReservationResponseDto[]> {
+    const reservas = await this.reservaRepository.find({
+      where: { userId: user.id },
+      relations: ['atraccion'],
+    });
     return reservas.map((res) => this.buildReservationResponse(res));
   }
 
-  async getReservationById(reservationId: string): Promise<ReservationResponseDto> {
+  async getReservationById(reservationId: string, user: AuthenticatedUser): Promise<ReservationResponseDto> {
     const res = await this.reservaRepository.findOne({
       where: { id: reservationId },
       relations: ['atraccion'],
@@ -415,6 +452,8 @@ export class AtraccionesService {
     if (!res) {
       throw new NotFoundException(`Reserva con ID ${reservationId} no encontrada`);
     }
+
+    this.assertReservationOwner(res, user);
 
     return this.buildReservationResponse(res);
   }

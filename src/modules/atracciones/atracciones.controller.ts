@@ -1,20 +1,23 @@
-import { Controller, Get, Post, Body, Patch, Put, Param, Delete, ParseUUIDPipe, Res, HttpCode, HttpStatus, Query, Header, Headers, HttpException, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Put, Param, Delete, ParseUUIDPipe, Res, HttpCode, HttpStatus, Query, Header, Headers, HttpException, BadRequestException, UseGuards, Req } from '@nestjs/common';
 import { Response } from 'express';
-import { AtraccionesService } from './atracciones.service';
+import { AtraccionesService, AuthenticatedUser } from './atracciones.service';
 import { CreateAtraccionDto } from './dto/create-atraccion.dto';
 import { UpdateAtraccionDto } from './dto/update-atraccion.dto';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBearerAuth } from '@nestjs/swagger';
 import { AtraccionResponseDto } from './dto/atraccion-response.dto';
-import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
-import { PaginatedResponseDto } from '../../common/dto/paginated-response.dto';
+import { GetAtraccionesFilterDto } from './dto/get-atracciones-filter.dto';
 import { SearchAtraccionesDto } from './dto/search-atracciones.dto';
 import { SearchAtraccionesResponseDto } from './dto/search-response.dto';
 import { DetailsRequestDto } from './dto/details-request.dto';
 import { AvailabilityResponseDto } from './dto/availability.dto';
 import { ReservationRequestDto, ReservationResponseDto, CancelReservationRequestDto } from './dto/reservation.dto';
+import { Public } from '../../common/auth/public.decorator';
+import { Roles } from '../../common/auth/roles.decorator';
+import { JwtAuthGuard } from '../../common/auth/jwt-auth.guard';
 
 @ApiTags('Atracciones')
 @Controller('atracciones')
+@UseGuards(JwtAuthGuard)
 export class AtraccionesController {
   private readonly uuidV4Regex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -26,6 +29,7 @@ export class AtraccionesController {
     }
   }
 
+  @Public()
   @Post('search')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Búsqueda de atracciones (soporta paginación por tokens)' })
@@ -35,6 +39,7 @@ export class AtraccionesController {
     return this.atraccionesService.search(searchDto);
   }
 
+  @Public()
   @Post('details')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Obtener detalles de múltiples atracciones (Batch)' })
@@ -43,6 +48,8 @@ export class AtraccionesController {
     return this.atraccionesService.getDetailsBatch(dto);
   }
 
+  @Roles('ADMIN', 'OPERATOR')
+  @ApiBearerAuth()
   @Post()
   @ApiOperation({ summary: 'Registrar una nueva atracción' })
   @ApiResponse({ status: 201, description: 'La atracción ha sido creada exitosamente. Devuelve cabecera Location.', type: AtraccionResponseDto })
@@ -56,15 +63,26 @@ export class AtraccionesController {
     return atraccion as unknown as AtraccionResponseDto;
   }
 
+  @Public()
   @Get()
   @Header('X-API-Deprecation-Date', '2027-12-31')
   @Header('Cache-Control', 'max-age=300')
   @ApiOperation({ summary: 'Obtener el listado paginado de atracciones' })
-  @ApiResponse({ status: 200, description: 'Listado de atracciones recuperado exitosamente.', type: PaginatedResponseDto })
-  findAll(@Query() query: PaginationQueryDto) {
+  @ApiResponse({
+    status: 200,
+    description: 'Listado de atracciones recuperado exitosamente.',
+    schema: {
+      example: {
+        data: [],
+        meta: { total: 0, page: 1, lastPage: 0 },
+      },
+    },
+  })
+  findAll(@Query() query: GetAtraccionesFilterDto) {
     return this.atraccionesService.findAll(query);
   }
 
+  @Public()
   @Get('health')
   @ApiOperation({ summary: 'Healthcheck del microservicio para el API Gateway (Reto 2)' })
   @ApiResponse({ status: 200, description: 'Servicio de atracciones operativo.' })
@@ -72,22 +90,28 @@ export class AtraccionesController {
     return { status: 'UP', timestamp: new Date().toISOString() };
   }
 
+  @ApiBearerAuth()
   @Get('reservations')
   @ApiOperation({ summary: 'Consultar el historial de reservas del usuario' })
   @ApiResponse({ status: 200, description: 'Listado de reservas.' })
-  async getReservations(): Promise<ReservationResponseDto[]> {
-    return await this.atraccionesService.getReservations();
+  async getReservations(@Req() req: { user: AuthenticatedUser }): Promise<ReservationResponseDto[]> {
+    return await this.atraccionesService.getReservations(req.user);
   }
 
+  @ApiBearerAuth()
   @Get('reservations/:reservationId')
   @ApiOperation({ summary: 'Obtener detalle de una reserva específica' })
   @ApiParam({ name: 'reservationId', description: 'ID de la reserva', type: 'string', format: 'uuid' })
   @ApiResponse({ status: 200, description: 'Detalle de la reserva.', type: ReservationResponseDto })
   @ApiResponse({ status: 404, description: 'Reserva no encontrada.' })
-  async getReservationById(@Param('reservationId', ParseUUIDPipe) reservationId: string): Promise<ReservationResponseDto> {
-    return await this.atraccionesService.getReservationById(reservationId);
+  async getReservationById(
+    @Param('reservationId', ParseUUIDPipe) reservationId: string,
+    @Req() req: { user: AuthenticatedUser },
+  ): Promise<ReservationResponseDto> {
+    return await this.atraccionesService.getReservationById(reservationId, req.user);
   }
 
+  @Public()
   @Get(':id')
   @Header('X-API-Deprecation-Date', '2027-12-31')
   @Header('Cache-Control', 'max-age=300')
@@ -99,6 +123,7 @@ export class AtraccionesController {
     return (await this.atraccionesService.findOne(id)) as unknown as AtraccionResponseDto;
   }
 
+  @Public()
   @Get(':id/availability')
   @ApiOperation({ summary: 'Consultar disponibilidad de cupos' })
   @ApiParam({ name: 'id', description: 'UUID de la atracción', type: 'string', format: 'uuid' })
@@ -111,6 +136,7 @@ export class AtraccionesController {
     return await this.atraccionesService.getAvailability(id, date);
   }
 
+  @ApiBearerAuth()
   @Post(':id/reservations')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Crear una reserva de la atracción' })
@@ -122,7 +148,8 @@ export class AtraccionesController {
   async reserve(
     @Param('id', ParseUUIDPipe) id: string,
     @Headers('idempotency-key') idempotencyKey: string,
-    @Body() reservationDto: ReservationRequestDto
+    @Body() reservationDto: ReservationRequestDto,
+    @Req() req: { user: AuthenticatedUser },
   ): Promise<ReservationResponseDto> {
     if (!idempotencyKey) {
       throw new HttpException('Idempotency-Key header is required', HttpStatus.BAD_REQUEST);
@@ -130,9 +157,10 @@ export class AtraccionesController {
 
     this.validateIdempotencyKey(idempotencyKey);
 
-    return await this.atraccionesService.reserve(id, reservationDto, idempotencyKey);
+    return await this.atraccionesService.reserve(id, reservationDto, idempotencyKey, req.user);
   }
 
+  @ApiBearerAuth()
   @Post('reservations/:reservationId/cancel')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Cancelar una reserva existente (Requiere Idempotency-Key)' })
@@ -142,7 +170,8 @@ export class AtraccionesController {
   async cancelReservation(
     @Param('reservationId', ParseUUIDPipe) reservationId: string,
     @Headers('idempotency-key') idempotencyKey: string,
-    @Body() dto: CancelReservationRequestDto
+    @Body() dto: CancelReservationRequestDto,
+    @Req() req: { user: AuthenticatedUser },
   ): Promise<ReservationResponseDto> {
     if (!idempotencyKey) {
       throw new HttpException('Idempotency-Key header is required', HttpStatus.BAD_REQUEST);
@@ -150,9 +179,11 @@ export class AtraccionesController {
 
     this.validateIdempotencyKey(idempotencyKey);
 
-    return await this.atraccionesService.cancelReservation(reservationId, dto, idempotencyKey);
+    return await this.atraccionesService.cancelReservation(reservationId, dto, idempotencyKey, req.user);
   }
 
+  @Roles('ADMIN', 'OPERATOR')
+  @ApiBearerAuth()
   @Put(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Reemplazar completamente los datos de una atracción' })
@@ -167,6 +198,8 @@ export class AtraccionesController {
     this.atraccionesService.replace(id, createAtraccionDto);
   }
 
+  @Roles('ADMIN', 'OPERATOR')
+  @ApiBearerAuth()
   @Patch(':id')
   @ApiOperation({ summary: 'Actualizar parcialmente los datos de una atracción' })
   @ApiParam({ name: 'id', description: 'UUID de la atracción', type: 'string', format: 'uuid' })
@@ -180,6 +213,8 @@ export class AtraccionesController {
     return (await this.atraccionesService.update(id, updateAtraccionDto)) as unknown as AtraccionResponseDto;
   }
 
+  @Roles('ADMIN', 'OPERATOR')
+  @ApiBearerAuth()
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Eliminar o desactivar una atracción' })

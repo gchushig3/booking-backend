@@ -9,6 +9,9 @@ export class Reserva {
   @Column({ type: 'uuid', unique: true })
   idempotencyKey: string;
 
+  @Column({ type: 'uuid', nullable: true })
+  userId: string | null;
+
   @Column({ type: 'date' })
   date: string;
 
