@@ -17,8 +17,35 @@ export class Atraccion {
   @Column({ type: 'varchar', length: 100 })
   ciudad: string;
 
+  @Column({ type: 'varchar', length: 100, default: '' })
+  provincia: string;
+
+  @Column({ type: 'varchar', length: 50, default: '' })
+  region: string;
+
+  @Column({ type: 'varchar', length: 80, default: 'Tours' })
+  categoria: string;
+
+  @Column({ type: 'jsonb', default: () => "'[]'::jsonb" })
+  imagenes: { url: string }[];
+
+  @Column('numeric', { precision: 10, scale: 2, default: 0, transformer: new ColumnNumericTransformer() })
+  precioBase: number;
+
+  @Column({ type: 'int', default: 30 })
+  cuposTotales: number;
+
+  @Column({ type: 'jsonb', default: () => "'[\"SINGLE_TICKET\",\"GUIDED_TOUR\",\"PACKAGE\"]'::jsonb" })
+  tipoExperienciaPermitidos: ProductType[];
+
+  @Column({ type: 'jsonb', default: () => "'[\"08:00\",\"10:00\",\"14:00\"]'::jsonb" })
+  horariosDisponibles: string[];
+
   @Column({ type: 'jsonb', nullable: true })
   price: { currency: string; total: number } | null;
+
+  @Column({ type: 'jsonb', nullable: true })
+  package_prices: Partial<Record<ProductType, { currency: string; total: number }>> | null;
 
   @Column({ type: 'jsonb', nullable: true })
   operator: { id: number; name: string } | null;

@@ -11,12 +11,12 @@ export class GetAtraccionesFilterDto {
   @Min(1)
   page: number = 1;
 
-  @ApiPropertyOptional({ description: 'Elementos por página', default: 10, minimum: 1 })
+  @ApiPropertyOptional({ description: 'Elementos por página', default: 100, minimum: 1 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  limit: number = 10;
+  limit: number = 100;
 
   @ApiPropertyOptional({ description: 'Tipo de producto', enum: ProductType })
   @IsOptional()

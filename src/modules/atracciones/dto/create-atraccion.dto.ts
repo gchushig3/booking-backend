@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsBoolean, IsOptional, IsString, IsEnum, IsArray, ValidateNested, MinLength } from 'class-validator';
+import { IsBoolean, IsOptional, IsString, IsEnum, IsArray, ValidateNested, MinLength, IsObject } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PriceDto, LocationDto, PhotoDto, OperatorDto } from './nested-types.dto';
 
@@ -7,6 +7,26 @@ export enum ProductType {
   SINGLE_TICKET = 'SINGLE_TICKET',
   GUIDED_TOUR = 'GUIDED_TOUR',
   PACKAGE = 'PACKAGE'
+}
+
+export class PackagePricesDto {
+  @ApiProperty({ type: PriceDto, required: false })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => PriceDto)
+  SINGLE_TICKET?: PriceDto;
+
+  @ApiProperty({ type: PriceDto, required: false })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => PriceDto)
+  GUIDED_TOUR?: PriceDto;
+
+  @ApiProperty({ type: PriceDto, required: false })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => PriceDto)
+  PACKAGE?: PriceDto;
 }
 
 export class CreateAtraccionDto {
@@ -29,6 +49,13 @@ export class CreateAtraccionDto {
   @ValidateNested()
   @Type(() => PriceDto)
   price?: PriceDto;
+
+  @ApiProperty({ description: 'Precios por modalidad; si se omite una modalidad se calcula desde el precio base', type: PackagePricesDto, required: false })
+  @IsOptional()
+  @IsObject()
+  @ValidateNested()
+  @Type(() => PackagePricesDto)
+  package_prices?: PackagePricesDto;
 
   @ApiProperty({ description: 'Empresa operadora del tour', type: OperatorDto, required: false })
   @IsOptional()

@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Patch, Put, Param, Delete, ParseUUIDPipe, Res, HttpCode, HttpStatus, Query, Header, Headers, HttpException, BadRequestException, UseGuards, Req } from '@nestjs/common';
 import { Response } from 'express';
 import { AtraccionesService, AuthenticatedUser } from './atracciones.service';
-import { CreateAtraccionDto } from './dto/create-atraccion.dto';
+import { CreateAtraccionDto, ProductType } from './dto/create-atraccion.dto';
 import { UpdateAtraccionDto } from './dto/update-atraccion.dto';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBearerAuth } from '@nestjs/swagger';
 import { AtraccionResponseDto } from './dto/atraccion-response.dto';
@@ -66,7 +66,7 @@ export class AtraccionesController {
   @Public()
   @Get()
   @Header('X-API-Deprecation-Date', '2027-12-31')
-  @Header('Cache-Control', 'max-age=300')
+  @Header('Cache-Control', 'no-store')
   @ApiOperation({ summary: 'Obtener el listado paginado de atracciones' })
   @ApiResponse({
     status: 200,
@@ -131,9 +131,11 @@ export class AtraccionesController {
   @ApiResponse({ status: 404, description: 'Not Found. La atracción no existe.' })
   async getAvailability(
     @Param('id', ParseUUIDPipe) id: string,
-    @Query('date') date: string
+    @Query('date') date: string,
+    @Query('product_type') productType?: ProductType,
+    @Query('time') time?: string,
   ): Promise<AvailabilityResponseDto> {
-    return await this.atraccionesService.getAvailability(id, date);
+    return await this.atraccionesService.getAvailability(id, date, productType, time);
   }
 
   @ApiBearerAuth()

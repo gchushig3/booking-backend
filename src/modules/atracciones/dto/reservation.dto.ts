@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsInt, Min, IsEmail, IsOptional } from 'class-validator';
+import { IsString, IsInt, Min, IsEmail, IsOptional, IsEnum } from 'class-validator';
 import { PriceDto } from './nested-types.dto';
+import { ProductType } from './create-atraccion.dto';
 
 export class ReservationRequestDto {
   @ApiProperty({ description: 'Fecha para la reserva', example: '2026-10-10', format: 'date' })
@@ -16,6 +17,11 @@ export class ReservationRequestDto {
   @IsInt()
   @Min(1)
   ticket_count: number;
+
+  @ApiProperty({ description: 'Modalidad contratada para esta reserva', enum: ProductType, required: false })
+  @IsOptional()
+  @IsEnum(ProductType)
+  product_type?: ProductType;
 
   @ApiProperty({ description: 'Nombre completo del cliente', example: 'Juan Perez' })
   @IsString()
@@ -42,6 +48,9 @@ export class ReservationResponseDto {
 
   @ApiProperty({ description: 'Cantidad de tickets reservados', example: 2 })
   ticket_count: number;
+
+  @ApiProperty({ description: 'Modalidad reservada', enum: ProductType })
+  product_type: ProductType;
 
   @ApiProperty({ description: 'Precio total de la reserva', type: PriceDto })
   total_price: PriceDto;

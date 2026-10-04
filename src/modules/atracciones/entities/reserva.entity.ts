@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { Atraccion } from './atraccion.entity';
+import { ProductType } from '../dto/create-atraccion.dto';
 
 @Entity('reservas_atracciones')
 export class Reserva {
@@ -20,6 +21,9 @@ export class Reserva {
 
   @Column({ type: 'int' })
   ticket_count: number;
+
+  @Column({ type: 'varchar', nullable: true })
+  product_type: ProductType | null;
 
   @Column({ type: 'varchar', length: 150 })
   customer_name: string;

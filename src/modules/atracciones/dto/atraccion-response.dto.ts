@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { BaseResponseDto } from '../../../common/dto/base-response.dto';
 import { PriceDto, LocationDto, PhotoDto, RatingDto, OperatorDto, UrlDto } from './nested-types.dto';
-import { ProductType } from './create-atraccion.dto';
+import { PackagePricesDto, ProductType } from './create-atraccion.dto';
 
 export class AtraccionResponseDto extends BaseResponseDto {
   @ApiProperty({ description: 'UUID único de la atracción', format: 'uuid', example: '123e4567-e89b-12d3-a456-426614174000' })
@@ -9,6 +9,21 @@ export class AtraccionResponseDto extends BaseResponseDto {
 
   @ApiProperty({ description: 'Nombre de la atracción', example: 'Heineken Experience Amsterdam' })
   name: string;
+
+  @ApiProperty({ example: 'Pichincha' })
+  provincia: string;
+
+  @ApiProperty({ example: 'Sierra' })
+  region: string;
+
+  @ApiProperty({ example: 'Museos y cultura' })
+  categoria: string;
+
+  @ApiProperty({ example: 25 })
+  cuposTotales: number;
+
+  @ApiProperty({ example: ['08:00', '10:00', '14:00'] })
+  horariosDisponibles: string[];
 
   @ApiProperty({ description: 'Descripción detallada', example: 'Discover the history of Heineken...' })
   long_description: string;
@@ -18,6 +33,9 @@ export class AtraccionResponseDto extends BaseResponseDto {
 
   @ApiProperty({ description: 'Precio de la atracción', type: PriceDto })
   price: PriceDto;
+
+  @ApiProperty({ description: 'Precios específicos por modalidad', type: PackagePricesDto, required: false })
+  package_prices?: PackagePricesDto;
 
   @ApiProperty({ description: 'Empresa Operadora', type: OperatorDto })
   operator: OperatorDto;
