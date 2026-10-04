@@ -123,9 +123,9 @@ export class AtraccionesService {
       product_type: productType,
       includes: atr.includes ?? ['Entrada'],
       categories: atr.categories ?? ['general'],
-      badges: atr.free_cancellation ? ['free_cancellation'] : [],
-      locations: atr.locations || [],
-      photos: atr.photos || [],
+      badges: atr.badges ?? (atr.free_cancellation ? ['free_cancellation'] : []),
+      locations: atr.locations ?? [],
+      photos: atr.photos ?? [],
       supported_languages: atr.supported_languages ?? ['en-gb'],
       free_cancellation: atr.free_cancellation ?? true,
       ratings: { number_of_reviews: 0, score: 5.0 },
@@ -202,6 +202,9 @@ export class AtraccionesService {
       categories: createAtraccionDto.categories ?? ['general'],
       includes: createAtraccionDto.includes ?? ['Entrada'],
       supported_languages: createAtraccionDto.supported_languages ?? ['en-gb'],
+      badges: createAtraccionDto.badges ?? [],
+      locations: createAtraccionDto.locations ?? [],
+      photos: createAtraccionDto.photos ?? [],
     });
 
     return await this.atraccionRepository.save(nuevaAtraccion);
@@ -257,6 +260,9 @@ export class AtraccionesService {
       categories: createAtraccionDto.categories ?? ['general'],
       includes: createAtraccionDto.includes ?? ['Entrada'],
       supported_languages: createAtraccionDto.supported_languages ?? ['en-gb'],
+      badges: createAtraccionDto.badges ?? [],
+      locations: createAtraccionDto.locations ?? [],
+      photos: createAtraccionDto.photos ?? [],
     });
 
     return await this.findOne(id);
@@ -282,6 +288,9 @@ export class AtraccionesService {
       categories: updateAtraccionDto.categories ?? atraccion.categories ?? ['general'],
       includes: updateAtraccionDto.includes ?? atraccion.includes ?? ['Entrada'],
       supported_languages: updateAtraccionDto.supported_languages ?? atraccion.supported_languages ?? ['en-gb'],
+      badges: updateAtraccionDto.badges ?? atraccion.badges ?? [],
+      locations: updateAtraccionDto.locations ?? atraccion.locations ?? [],
+      photos: updateAtraccionDto.photos ?? atraccion.photos ?? [],
     });
 
     return await this.atraccionRepository.save(atraccionActualizada);

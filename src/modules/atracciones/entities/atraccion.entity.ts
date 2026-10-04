@@ -35,6 +35,15 @@ export class Atraccion {
   @Column({ type: 'jsonb', nullable: true })
   supported_languages: string[] | null;
 
+  @Column({ type: 'jsonb', nullable: true })
+  badges: string[] | null;
+
+  @Column({ type: 'jsonb', nullable: true })
+  locations: unknown[] | null;
+
+  @Column({ type: 'jsonb', nullable: true })
+  photos: unknown[] | null;
+
   @Column('numeric', {
     precision: 10,
     scale: 6,
@@ -93,22 +102,6 @@ export class Atraccion {
 
   set free_cancellation(value: boolean) {
     this.estaActivo = value;
-  }
-
-  get photos(): any[] {
-    return [];
-  }
-
-  set photos(value: any[]) {
-    void value;
-  }
-
-  get locations(): any[] {
-    return [];
-  }
-
-  set locations(value: any[]) {
-    void value;
   }
 
   @OneToMany(() => Reserva, (reserva) => reserva.atraccion)
