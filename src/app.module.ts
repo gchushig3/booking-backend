@@ -8,6 +8,7 @@ import { CommonModule } from './common/common.module';
 // import { AlojamientosModule } from './modules/alojamientos/alojamientos.module';
 // import { AutosModule } from './modules/autos/autos.module';
 import { AtraccionesModule } from './modules/atracciones/atracciones.module';
+import { AuthModule } from './modules/auth/auth.module';
 import { JwtAuthGuard } from './common/auth/jwt-auth.guard';
 import { JwtStrategy } from './common/auth/jwt.strategy';
 import { RolesGuard } from './common/auth/roles.guard';
@@ -33,6 +34,7 @@ import { RolesGuard } from './common/auth/roles.guard';
     }),
 
     CommonModule,
+    AuthModule,
     AtraccionesModule,
   ],
   controllers: [],

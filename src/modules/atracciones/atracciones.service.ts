@@ -96,6 +96,7 @@ export class AtraccionesService {
   private buildReservationResponse(reserva: Reserva): ReservationResponseDto {
     const price = this.normalizePrice(reserva.atraccion?.price ?? { currency: 'USD', total: 0 });
     const ticketCount = Number(reserva.ticket_count ?? 0);
+    const photos = reserva.atraccion?.photos as Array<{ url?: string }> | null;
 
     return {
       reservation_id: reserva.id,
@@ -104,6 +105,13 @@ export class AtraccionesService {
       total_price: {
         currency: price.currency,
         total: ticketCount * price.total,
+      },
+      date: reserva.date,
+      time: reserva.time,
+      attraction: {
+        id: reserva.atraccion?.id ?? '',
+        name: reserva.atraccion?.name ?? reserva.atraccion?.nombre ?? 'Atracción',
+        image_url: photos?.[0]?.url,
       },
     };
   }

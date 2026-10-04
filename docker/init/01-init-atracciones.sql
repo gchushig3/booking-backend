@@ -40,6 +40,15 @@ CREATE TABLE IF NOT EXISTS reservas_atracciones (
     FOREIGN KEY (atraccion_id) REFERENCES atracciones(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS users (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name varchar(120) NOT NULL,
+  email varchar(255) NOT NULL UNIQUE,
+  password_hash varchar(255) NOT NULL,
+  role varchar(20) NOT NULL DEFAULT 'USER',
+  "createdAt" timestamp NOT NULL DEFAULT now()
+);
+
 INSERT INTO atracciones (
   id, nombre, descripcion, ciudad, price, operator, product_type,
   categories, includes, supported_languages, badges, locations, photos,

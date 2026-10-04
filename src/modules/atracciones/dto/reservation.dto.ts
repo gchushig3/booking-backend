@@ -45,6 +45,15 @@ export class ReservationResponseDto {
 
   @ApiProperty({ description: 'Precio total de la reserva', type: PriceDto })
   total_price: PriceDto;
+
+  @ApiProperty({ description: 'Fecha de la reserva', example: '2026-10-10' })
+  date: string;
+
+  @ApiProperty({ description: 'Hora seleccionada', example: '10:00', required: false })
+  time?: string;
+
+  @ApiProperty({ description: 'Atracción reservada' })
+  attraction: { id: string; name: string; image_url?: string };
 }
 
 export class CancelReservationRequestDto {
