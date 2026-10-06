@@ -50,7 +50,7 @@ export class Atraccion {
   @Column({ type: 'jsonb', nullable: true })
   operator: { id: number; name: string } | null;
 
-  @Column({ type: 'varchar', default: ProductType.SINGLE_TICKET })
+  @Column({ type: 'enum', enum: ProductType, enumName: 'booking_product_type_enum', default: ProductType.SINGLE_TICKET })
   product_type: ProductType;
 
   @Column({ type: 'jsonb', nullable: true })

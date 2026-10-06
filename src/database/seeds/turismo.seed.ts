@@ -3,6 +3,7 @@ import { DataSource, Repository } from 'typeorm';
 import { AppModule } from '../../app.module';
 import { Atraccion } from '../../modules/atracciones/entities/atraccion.entity';
 import { ProductType } from '../../modules/atracciones/dto/create-atraccion.dto';
+import { PaqueteExperiencia } from '../../modules/atracciones/entities/paquete-experiencia.entity';
 
 type SeedPlace = {
   nombre: string; ciudad: string; provincia: string; region: string; categoria: string;
@@ -51,6 +52,7 @@ async function seed(): Promise<void> {
   const app = await NestFactory.createApplicationContext(AppModule, { logger: ['error', 'warn', 'log'] });
   try {
     const repository = app.get(DataSource).getRepository(Atraccion);
+    const packages = app.get(DataSource).getRepository(PaqueteExperiencia);
     await repository.query(`
       ALTER TABLE atracciones ADD COLUMN IF NOT EXISTS provincia varchar(100) NOT NULL DEFAULT '';
       ALTER TABLE atracciones ADD COLUMN IF NOT EXISTS region varchar(50) NOT NULL DEFAULT '';
@@ -84,7 +86,22 @@ async function seed(): Promise<void> {
         locations: [{ address: place.nombre, city: place.ciudad, country: 'ec', coordinates: { latitude: place.latitud, longitude: place.longitud }, type: 'attraction' }],
         duracionHoras: place.duracion, estaActivo: true,
       });
-      await repository.save(record);
+      const attraction = await repository.save(record);
+      const packageRecord = await packages.findOne({ where: { atraccionId: attraction.id, tipoExperiencia: place.producto, nombrePaquete: `Experiencia ${place.producto}` } });
+      await packages.save(packages.create({
+        ...(packageRecord ? { id: packageRecord.id } : {}),
+        atraccionId: attraction.id,
+        tipoExperiencia: place.producto,
+        nombrePaquete: `Experiencia ${place.producto}`,
+        descripcion: `Modalidad inicial ${place.producto} para ${place.nombre}`,
+        precioUnitario: String(place.precio),
+        minParticipantes: place.producto === ProductType.GUIDED_TOUR ? 2 : 1,
+        maxParticipantes: place.producto === ProductType.GUIDED_TOUR ? 10 : null,
+        politicasJson: {
+          edad_nino_gratis_hasta: 10,
+          cancelacion: { permitida: true, horas_antes: 24 },
+        },
+      }));
     }
     console.log(`Seed completado: ${places.length} atracciones creadas o actualizadas.`);
   } finally {

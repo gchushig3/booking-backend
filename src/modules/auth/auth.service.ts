@@ -30,9 +30,15 @@ export class AuthService {
       throw new ConflictException('Ya existe una cuenta con ese correo electrónico.');
     }
 
+    if (await this.users.exist({ where: { cedula_dni: dto.cedula_dni } })) {
+      throw new ConflictException('Identity number is already registered.');
+    }
+
     const user = this.users.create({
       name: dto.name.trim(),
       email,
+      cedula_dni: dto.cedula_dni,
+      role: 'CLIENTE',
       passwordHash: await hash(dto.password, 12),
     });
 

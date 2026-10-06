@@ -29,7 +29,7 @@ import { RolesGuard } from './common/auth/roles.guard';
         type: 'postgres',
         url: configService.get<string>('DATABASE_URL'),
         autoLoadEntities: true,
-        synchronize: configService.get<string>('NODE_ENV') !== 'production',
+        synchronize: false,
       }),
     }),
 

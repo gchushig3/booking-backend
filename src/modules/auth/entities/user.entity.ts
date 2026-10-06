@@ -14,7 +14,10 @@ export class User {
   @Column({ name: 'password_hash', type: 'varchar', length: 255, select: false })
   passwordHash: string;
 
-  @Column({ type: 'varchar', length: 20, default: 'USER' })
+  @Column({ type: 'varchar', length: 20, unique: true, nullable: true })
+  cedula_dni: string | null;
+
+  @Column({ type: 'enum', enum: ['CLIENTE', 'ADMIN'], enumName: 'booking_user_role_enum', default: 'CLIENTE' })
   role: string;
 
   @CreateDateColumn({ type: 'timestamp' })

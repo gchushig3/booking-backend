@@ -33,15 +33,18 @@ CREATE TABLE IF NOT EXISTS atracciones (
 
 CREATE TABLE IF NOT EXISTS reservas_atracciones (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  "idempotencyKey" uuid NOT NULL UNIQUE,
+  idempotency_key uuid NOT NULL UNIQUE,
+  codigo_reserva varchar(40) UNIQUE,
+  request_fingerprint varchar(64),
+  turno_id uuid,
   "userId" uuid,
   date date NOT NULL,
   time varchar,
   ticket_count integer NOT NULL,
   customer_name varchar(150) NOT NULL,
   customer_email varchar(150),
-  status varchar NOT NULL DEFAULT 'CONFIRMED'
-    CHECK (status IN ('CONFIRMED', 'PENDING', 'CANCELLED')),
+  status varchar NOT NULL DEFAULT 'CONFIRMADA'
+    CHECK (status IN ('PENDIENTE', 'CONFIRMADA', 'CANCELADA')),
   atraccion_id uuid NOT NULL,
   "createdAt" timestamp NOT NULL DEFAULT now(),
   CONSTRAINT "FK_reservas_atracciones_atraccion_id"
@@ -53,7 +56,8 @@ CREATE TABLE IF NOT EXISTS users (
   name varchar(120) NOT NULL,
   email varchar(255) NOT NULL UNIQUE,
   password_hash varchar(255) NOT NULL,
-  role varchar(20) NOT NULL DEFAULT 'USER',
+  cedula_dni varchar(20) UNIQUE,
+  role varchar(20) NOT NULL DEFAULT 'CLIENTE' CHECK (role IN ('CLIENTE', 'ADMIN')),
   "createdAt" timestamp NOT NULL DEFAULT now()
 );
 

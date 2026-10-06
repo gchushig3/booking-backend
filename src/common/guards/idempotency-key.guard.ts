@@ -21,7 +21,7 @@ export class IdempotencyKeyGuard implements CanActivate {
 
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<Request>();
-    const idempotencyKey = request.headers['idempotency-key'] as string | undefined;
+    const idempotencyKey = (request.headers['x-idempotency-key'] ?? request.headers['idempotency-key']) as string | undefined;
 
     if (!idempotencyKey || idempotencyKey.trim() === '') {
       throw new HttpException(

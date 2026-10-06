@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { BaseResponseDto } from '../../../common/dto/base-response.dto';
-import { PriceDto, LocationDto, PhotoDto, RatingDto, OperatorDto, UrlDto } from './nested-types.dto';
+import { PriceDto, RatingDto, OperatorDto, UrlDto } from './nested-types.dto';
 import { PackagePricesDto, ProductType } from './create-atraccion.dto';
 
 export class AtraccionResponseDto extends BaseResponseDto {
@@ -19,11 +19,17 @@ export class AtraccionResponseDto extends BaseResponseDto {
   @ApiProperty({ example: 'Museos y cultura' })
   categoria: string;
 
+  @ApiProperty({ description: 'Precio base para la atracción', example: 25 })
+  precioBase: number;
+
   @ApiProperty({ example: 25 })
   cuposTotales: number;
 
   @ApiProperty({ example: ['08:00', '10:00', '14:00'] })
   horariosDisponibles: string[];
+
+  @ApiProperty({ enum: ProductType, isArray: true })
+  tipoExperienciaPermitidos: ProductType[];
 
   @ApiProperty({ description: 'Descripción detallada', example: 'Discover the history of Heineken...' })
   long_description: string;
@@ -52,11 +58,11 @@ export class AtraccionResponseDto extends BaseResponseDto {
   @ApiProperty({ description: 'Insignias comerciales', example: ['best_seller'] })
   badges: string[];
 
-  @ApiProperty({ description: 'Ubicaciones asociadas a la atracción', type: [LocationDto] })
-  locations: LocationDto[];
+  @ApiProperty({ description: 'Ubicaciones asociadas a la atracción', type: 'array', items: { type: 'object', additionalProperties: true } })
+  locations: unknown[];
 
-  @ApiProperty({ description: 'Fotos de la atracción', type: [PhotoDto] })
-  photos: PhotoDto[];
+  @ApiProperty({ description: 'Fotos de la atracción', type: 'array', items: { type: 'object', additionalProperties: true } })
+  photos: unknown[];
 
   @ApiProperty({ description: 'Idiomas soportados', example: ['en-gb', 'nl'] })
   supported_languages: string[];

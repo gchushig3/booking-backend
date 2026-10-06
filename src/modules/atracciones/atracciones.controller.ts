@@ -1,16 +1,21 @@
-import { Controller, Get, Post, Body, Patch, Put, Param, Delete, ParseUUIDPipe, Res, HttpCode, HttpStatus, Query, Header, Headers, HttpException, BadRequestException, UseGuards, Req } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Header, HttpCode, HttpStatus, Param, ParseUUIDPipe, Patch, Post, Put, Query, Req, Res, UseGuards } from '@nestjs/common';
 import { Response } from 'express';
+import {
+  ApiBadRequestResponse, ApiBearerAuth, ApiBody, ApiConflictResponse, ApiCreatedResponse,
+  ApiForbiddenResponse, ApiHeader, ApiNotFoundResponse, ApiOkResponse, ApiOperation,
+  ApiParam, ApiQuery, ApiResponse, ApiTags, ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
 import { AtraccionesService, AuthenticatedUser } from './atracciones.service';
 import { CreateAtraccionDto, ProductType } from './dto/create-atraccion.dto';
 import { UpdateAtraccionDto } from './dto/update-atraccion.dto';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBearerAuth } from '@nestjs/swagger';
 import { AtraccionResponseDto } from './dto/atraccion-response.dto';
+import { PaqueteExperienciaResponseDto } from './dto/paquete-experiencia-response.dto';
 import { GetAtraccionesFilterDto } from './dto/get-atracciones-filter.dto';
 import { SearchAtraccionesDto } from './dto/search-atracciones.dto';
-import { SearchAtraccionesResponseDto } from './dto/search-response.dto';
+import { AtraccionesListResponseDto, BatchAtraccionesResponseDto, SearchAtraccionesResponseDto } from './dto/search-response.dto';
 import { DetailsRequestDto } from './dto/details-request.dto';
 import { AvailabilityResponseDto } from './dto/availability.dto';
-import { ReservationRequestDto, ReservationResponseDto, CancelReservationRequestDto } from './dto/reservation.dto';
+import { CancelReservationRequestDto, ReservationRequestDto, ReservationResponseDto } from './dto/reservation.dto';
 import { Public } from '../../common/auth/public.decorator';
 import { Roles } from '../../common/auth/roles.decorator';
 import { JwtAuthGuard } from '../../common/auth/jwt-auth.guard';
@@ -23,207 +28,194 @@ export class AtraccionesController {
 
   constructor(private readonly atraccionesService: AtraccionesService) {}
 
-  private validateIdempotencyKey(idempotencyKey: string): void {
-    if (!idempotencyKey || !this.uuidV4Regex.test(idempotencyKey)) {
-      throw new BadRequestException('El encabezado Idempotency-Key debe ser un UUID v4 válido');
-    }
+  private validateIdempotencyKey(key: string): void {
+    if (!key || !this.uuidV4Regex.test(key)) throw new BadRequestException('El encabezado X-Idempotency-Key debe ser un UUID v4 válido.');
   }
 
   @Public()
   @Post('search')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Búsqueda de atracciones (soporta paginación por tokens)' })
-  @ApiResponse({ status: 200, description: 'Resultados de la búsqueda.', type: SearchAtraccionesResponseDto })
-  @ApiResponse({ status: 400, description: 'Bad Request. Datos de entrada inválidos.' })
-  search(@Body() searchDto: SearchAtraccionesDto) {
-    return this.atraccionesService.search(searchDto);
-  }
+  @ApiOperation({ summary: 'Buscar atracciones' })
+  @ApiOkResponse({ type: SearchAtraccionesResponseDto })
+  @ApiBadRequestResponse({ description: 'DTO de búsqueda inválido.' })
+  @ApiBody({ type: SearchAtraccionesDto })
+  search(@Body() dto: SearchAtraccionesDto): Promise<SearchAtraccionesResponseDto> { return this.atraccionesService.search(dto); }
 
   @Public()
   @Post('details')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Obtener detalles de múltiples atracciones (Batch)' })
-  @ApiResponse({ status: 200, description: 'Detalles de atracciones', type: SearchAtraccionesResponseDto })
-  async getDetailsBatch(@Body() dto: DetailsRequestDto) {
-    return this.atraccionesService.getDetailsBatch(dto);
-  }
+  @ApiOperation({ summary: 'Obtener detalles batch de atracciones' })
+  @ApiOkResponse({ type: BatchAtraccionesResponseDto })
+  @ApiBadRequestResponse({ description: 'DTO de detalles inválido.' })
+  @ApiBody({ type: DetailsRequestDto })
+  getDetailsBatch(@Body() dto: DetailsRequestDto): Promise<BatchAtraccionesResponseDto> { return this.atraccionesService.getDetailsBatch(dto); }
 
-  @Roles('ADMIN', 'OPERATOR')
-  @ApiBearerAuth()
+  @Roles('ADMIN')
+  @ApiBearerAuth('JWT-auth')
   @Post()
-  @ApiOperation({ summary: 'Registrar una nueva atracción' })
-  @ApiResponse({ status: 201, description: 'La atracción ha sido creada exitosamente. Devuelve cabecera Location.', type: AtraccionResponseDto })
-  @ApiResponse({ status: 400, description: 'Bad Request. Datos de entrada inválidos.' })
-  async create(
-    @Body() createAtraccionDto: CreateAtraccionDto,
-    @Res({ passthrough: true }) res: Response
-  ): Promise<AtraccionResponseDto> {
-    const atraccion = await this.atraccionesService.create(createAtraccionDto);
-    res.setHeader('Location', `/api/v1/atracciones/${atraccion.id || 'uuid-generado'}`);
-    return atraccion as unknown as AtraccionResponseDto;
+  @ApiOperation({ summary: 'Crear atracción', description: 'Requiere Bearer JWT y rol ADMIN.' })
+  @ApiCreatedResponse({ type: AtraccionResponseDto, description: 'Atracción creada; incluye cabecera Location.' })
+  @ApiBadRequestResponse({ description: 'DTO inválido.' })
+  @ApiUnauthorizedResponse({ description: 'JWT ausente o inválido.' })
+  @ApiForbiddenResponse({ description: 'Se requiere rol ADMIN.' })
+  @ApiBody({ type: CreateAtraccionDto })
+  async create(@Body() dto: CreateAtraccionDto, @Res({ passthrough: true }) res: Response): Promise<AtraccionResponseDto> {
+    const attraction = await this.atraccionesService.create(dto);
+    res.setHeader('Location', `/api/v1/atracciones/${attraction.id}`);
+    return this.atraccionesService.mapAtraccionPayload(attraction);
   }
 
   @Public()
   @Get()
   @Header('X-API-Deprecation-Date', '2027-12-31')
   @Header('Cache-Control', 'no-store')
-  @ApiOperation({ summary: 'Obtener el listado paginado de atracciones' })
-  @ApiResponse({
-    status: 200,
-    description: 'Listado de atracciones recuperado exitosamente.',
-    schema: {
-      example: {
-        data: [],
-        meta: { total: 0, page: 1, lastPage: 0 },
-      },
-    },
-  })
-  findAll(@Query() query: GetAtraccionesFilterDto) {
-    return this.atraccionesService.findAll(query);
-  }
+  @ApiOperation({ summary: 'Listar atracciones paginadas' })
+  @ApiOkResponse({ type: AtraccionesListResponseDto })
+  @ApiBadRequestResponse({ description: 'Parámetros de paginación o modalidad inválidos.' })
+  findAll(@Query() query: GetAtraccionesFilterDto): Promise<AtraccionesListResponseDto> { return this.atraccionesService.findAll(query); }
 
   @Public()
   @Get('health')
-  @ApiOperation({ summary: 'Healthcheck del microservicio para el API Gateway (Reto 2)' })
-  @ApiResponse({ status: 200, description: 'Servicio de atracciones operativo.' })
-  checkHealth() {
-    return { status: 'UP', timestamp: new Date().toISOString() };
-  }
+  @ApiOperation({ summary: 'Consultar estado del servicio de atracciones' })
+  @ApiOkResponse({ schema: { example: { status: 'UP', timestamp: '2026-10-05T12:00:00.000Z' } } })
+  checkHealth() { return { status: 'UP', timestamp: new Date().toISOString() }; }
 
-  @ApiBearerAuth()
+  @Public()
+  @Get(':id/paquetes')
+  @ApiOperation({ summary: 'Listar paquetes, modalidades, precios y políticas de una atracción' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid', description: 'UUID de la atracción.' })
+  @ApiOkResponse({ type: PaqueteExperienciaResponseDto, isArray: true })
+  @ApiBadRequestResponse({ description: 'El id no es un UUID válido.' })
+  @ApiNotFoundResponse({ description: 'Atracción no encontrada.' })
+  getPackages(@Param('id', ParseUUIDPipe) id: string): Promise<PaqueteExperienciaResponseDto[]> { return this.atraccionesService.getPackages(id); }
+
+  @ApiBearerAuth('JWT-auth')
   @Get('reservations')
-  @ApiOperation({ summary: 'Consultar el historial de reservas del usuario' })
-  @ApiResponse({ status: 200, description: 'Listado de reservas.' })
-  async getReservations(@Req() req: { user: AuthenticatedUser }): Promise<ReservationResponseDto[]> {
-    return await this.atraccionesService.getReservations(req.user);
-  }
+  @ApiOperation({ summary: 'Listar mis reservas' })
+  @ApiOkResponse({ type: ReservationResponseDto, isArray: true })
+  @ApiUnauthorizedResponse({ description: 'JWT ausente o inválido.' })
+  getReservations(@Req() req: { user: AuthenticatedUser }): Promise<ReservationResponseDto[]> { return this.atraccionesService.getReservations(req.user); }
 
-  @ApiBearerAuth()
+  @ApiBearerAuth('JWT-auth')
   @Get('reservations/:reservationId')
-  @ApiOperation({ summary: 'Obtener detalle de una reserva específica' })
-  @ApiParam({ name: 'reservationId', description: 'ID de la reserva', type: 'string', format: 'uuid' })
-  @ApiResponse({ status: 200, description: 'Detalle de la reserva.', type: ReservationResponseDto })
-  @ApiResponse({ status: 404, description: 'Reserva no encontrada.' })
-  async getReservationById(
-    @Param('reservationId', ParseUUIDPipe) reservationId: string,
-    @Req() req: { user: AuthenticatedUser },
-  ): Promise<ReservationResponseDto> {
-    return await this.atraccionesService.getReservationById(reservationId, req.user);
+  @ApiOperation({ summary: 'Consultar detalle de una reserva propia' })
+  @ApiParam({ name: 'reservationId', type: String, format: 'uuid' })
+  @ApiOkResponse({ type: ReservationResponseDto })
+  @ApiBadRequestResponse({ description: 'El id no es un UUID válido.' })
+  @ApiUnauthorizedResponse({ description: 'JWT ausente o inválido.' })
+  @ApiForbiddenResponse({ description: 'La reserva pertenece a otro usuario.' })
+  @ApiNotFoundResponse({ description: 'Reserva no encontrada.' })
+  getReservationById(@Param('reservationId', ParseUUIDPipe) id: string, @Req() req: { user: AuthenticatedUser }): Promise<ReservationResponseDto> {
+    return this.atraccionesService.getReservationById(id, req.user);
   }
 
   @Public()
   @Get(':id')
   @Header('X-API-Deprecation-Date', '2027-12-31')
   @Header('Cache-Control', 'max-age=300')
-  @ApiOperation({ summary: 'Obtener el detalle de una atracción por su ID' })
-  @ApiParam({ name: 'id', description: 'UUID de la atracción', type: 'string', format: 'uuid' })
-  @ApiResponse({ status: 200, description: 'Detalle de la atracción.', type: AtraccionResponseDto })
-  @ApiResponse({ status: 404, description: 'Not Found. La atracción no existe.' })
-  async findOne(@Param('id', ParseUUIDPipe) id: string): Promise<AtraccionResponseDto> {
-    return (await this.atraccionesService.findOne(id)) as unknown as AtraccionResponseDto;
-  }
+  @ApiOperation({ summary: 'Consultar detalle de una atracción' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
+  @ApiOkResponse({ type: AtraccionResponseDto })
+  @ApiBadRequestResponse({ description: 'El id no es un UUID válido.' })
+  @ApiNotFoundResponse({ description: 'Atracción no encontrada.' })
+  getAttraction(@Param('id', ParseUUIDPipe) id: string): Promise<AtraccionResponseDto> { return this.atraccionesService.getAttractionResponse(id); }
 
   @Public()
   @Get(':id/availability')
-  @ApiOperation({ summary: 'Consultar disponibilidad de cupos' })
-  @ApiParam({ name: 'id', description: 'UUID de la atracción', type: 'string', format: 'uuid' })
-  @ApiResponse({ status: 200, description: 'Disponibilidad recuperada exitosamente.', type: AvailabilityResponseDto })
-  @ApiResponse({ status: 404, description: 'Not Found. La atracción no existe.' })
-  async getAvailability(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Query('date') date: string,
-    @Query('product_type') productType?: ProductType,
-    @Query('time') time?: string,
-  ): Promise<AvailabilityResponseDto> {
-    return await this.atraccionesService.getAvailability(id, date, productType, time);
+  @ApiOperation({ summary: 'Consultar disponibilidad para una fecha y turno' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
+  @ApiQuery({ name: 'date', required: true, type: String, example: '2026-10-10', description: 'Fecha en formato YYYY-MM-DD.' })
+  @ApiQuery({ name: 'product_type', required: false, enum: ProductType })
+  @ApiQuery({ name: 'time', required: false, type: String, example: '10:00', description: 'Si se envía, available_spots corresponde a este turno.' })
+  @ApiOkResponse({ type: AvailabilityResponseDto, description: 'Devuelve date, available_spots, times y los filtros enviados.' })
+  @ApiBadRequestResponse({ description: 'Fecha faltante/incorrecta o modalidad inválida.' })
+  @ApiNotFoundResponse({ description: 'Atracción no encontrada.' })
+  getAvailability(@Param('id', ParseUUIDPipe) id: string, @Query('date') date: string,
+    @Query('product_type') productType?: ProductType, @Query('time') time?: string): Promise<AvailabilityResponseDto> {
+    return this.atraccionesService.getAvailability(id, date, productType, time);
   }
 
-  @ApiBearerAuth()
+  @ApiBearerAuth('JWT-auth')
   @Post(':id/reservations')
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Crear una reserva de la atracción' })
-  @ApiParam({ name: 'id', description: 'UUID de la atracción', type: 'string', format: 'uuid' })
-  @ApiResponse({ status: 201, description: 'Reserva confirmada', type: ReservationResponseDto })
-  @ApiResponse({ status: 400, description: 'Bad Request.' })
-  @ApiResponse({ status: 404, description: 'Not Found.' })
-  @ApiResponse({ status: 409, description: 'Conflicto de Idempotencia.' })
-  async reserve(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Headers('idempotency-key') idempotencyKey: string,
-    @Body() reservationDto: ReservationRequestDto,
-    @Req() req: { user: AuthenticatedUser },
-  ): Promise<ReservationResponseDto> {
-    if (!idempotencyKey) {
-      throw new HttpException('Idempotency-Key header is required', HttpStatus.BAD_REQUEST);
-    }
-
-    this.validateIdempotencyKey(idempotencyKey);
-
-    return await this.atraccionesService.reserve(id, reservationDto, idempotencyKey, req.user);
+  @ApiOperation({ summary: 'Checkout y creación de reserva' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid', description: 'UUID de la atracción.' })
+  @ApiHeader({ name: 'X-Idempotency-Key', required: true, description: 'UUID v4 estable para reintentos idénticos.' })
+  @ApiCreatedResponse({ type: ReservationResponseDto, description: 'Reserva confirmada y pago mock procesado.' })
+  @ApiBadRequestResponse({ description: 'DTO/header invalido, paquete de otra atraccion o product_type diferente del paquete seleccionado.' })
+  @ApiUnauthorizedResponse({ description: 'JWT ausente o inválido.' })
+  @ApiNotFoundResponse({ description: 'Atraccion o paquete_id no encontrado.' })
+  @ApiConflictResponse({ description: '409 INSUFFICIENT_AVAILABILITY, PAYMENT_FAILED o IDEMPOTENCY_KEY_REUSED si la key tiene otro payload/propietario.' })
+  @ApiBody({ type: ReservationRequestDto })
+  async reserve(@Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ReservationRequestDto,
+    @Req() req: { user: AuthenticatedUser; headers: { 'x-idempotency-key'?: string } }): Promise<ReservationResponseDto> {
+    const key = req.headers['x-idempotency-key'];
+    if (!key) throw new BadRequestException('El encabezado X-Idempotency-Key es obligatorio.');
+    this.validateIdempotencyKey(key);
+    return this.atraccionesService.reserve(id, dto, key, req.user);
   }
 
-  @ApiBearerAuth()
+  @ApiBearerAuth('JWT-auth')
   @Post('reservations/:reservationId/cancel')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Cancelar una reserva existente (Requiere Idempotency-Key)' })
-  @ApiParam({ name: 'reservationId', description: 'ID de la reserva a cancelar', type: 'string', format: 'uuid' })
-  @ApiResponse({ status: 200, description: 'Reserva cancelada exitosamente.', type: ReservationResponseDto })
-  @ApiResponse({ status: 409, description: 'Conflicto de Idempotencia.' })
-  async cancelReservation(
-    @Param('reservationId', ParseUUIDPipe) reservationId: string,
-    @Headers('idempotency-key') idempotencyKey: string,
-    @Body() dto: CancelReservationRequestDto,
-    @Req() req: { user: AuthenticatedUser },
-  ): Promise<ReservationResponseDto> {
-    if (!idempotencyKey) {
-      throw new HttpException('Idempotency-Key header is required', HttpStatus.BAD_REQUEST);
-    }
-
-    this.validateIdempotencyKey(idempotencyKey);
-
-    return await this.atraccionesService.cancelReservation(reservationId, dto, idempotencyKey, req.user);
+  @ApiOperation({ summary: 'Cancelar una reserva propia' })
+  @ApiParam({ name: 'reservationId', type: String, format: 'uuid' })
+  @ApiHeader({ name: 'X-Idempotency-Key', required: true, description: 'UUID v4 para reintentos de cancelación.' })
+  @ApiOkResponse({ type: ReservationResponseDto })
+  @ApiBadRequestResponse({ description: 'DTO inválido o header ausente/inválido.' })
+  @ApiUnauthorizedResponse({ description: 'JWT ausente o inválido.' })
+  @ApiForbiddenResponse({ description: 'La reserva pertenece a otro usuario.' })
+  @ApiNotFoundResponse({ description: 'Reserva no encontrada.' })
+  @ApiConflictResponse({ description: 'La key corresponde a otra cancelación o los cupos son inconsistentes.' })
+  @ApiBody({ type: CancelReservationRequestDto })
+  async cancelReservation(@Param('reservationId', ParseUUIDPipe) id: string, @Body() dto: CancelReservationRequestDto,
+    @Req() req: { user: AuthenticatedUser; headers: { 'x-idempotency-key'?: string } }): Promise<ReservationResponseDto> {
+    const key = req.headers['x-idempotency-key'];
+    if (!key) throw new BadRequestException('El encabezado X-Idempotency-Key es obligatorio.');
+    this.validateIdempotencyKey(key);
+    return this.atraccionesService.cancelReservation(id, dto, key, req.user);
   }
 
-  @Roles('ADMIN', 'OPERATOR')
-  @ApiBearerAuth()
+  @Roles('ADMIN')
+  @ApiBearerAuth('JWT-auth')
   @Put(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Reemplazar completamente los datos de una atracción' })
-  @ApiParam({ name: 'id', description: 'UUID de la atracción', type: 'string', format: 'uuid' })
-  @ApiResponse({ status: 204, description: 'La atracción ha sido reemplazada correctamente.' })
-  @ApiResponse({ status: 400, description: 'Bad Request. Datos de entrada inválidos.' })
-  @ApiResponse({ status: 404, description: 'Not Found. La atracción no existe.' })
-  replace(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() createAtraccionDto: CreateAtraccionDto,
-  ): void {
-    this.atraccionesService.replace(id, createAtraccionDto);
-  }
+  @ApiOperation({ summary: 'Reemplazar una atracción', description: 'Requiere Bearer JWT y rol ADMIN.' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
+  @ApiResponse({ status: 204, description: 'Reemplazo completado sin cuerpo.' })
+  @ApiBadRequestResponse({ description: 'UUID o DTO inválido.' })
+  @ApiUnauthorizedResponse({ description: 'JWT ausente o inválido.' })
+  @ApiForbiddenResponse({ description: 'Se requiere rol ADMIN.' })
+  @ApiNotFoundResponse({ description: 'Atracción no encontrada.' })
+  @ApiBody({ type: CreateAtraccionDto })
+  async replace(@Param('id', ParseUUIDPipe) id: string, @Body() dto: CreateAtraccionDto): Promise<void> { await this.atraccionesService.replace(id, dto); }
 
-  @Roles('ADMIN', 'OPERATOR')
-  @ApiBearerAuth()
+  @Roles('ADMIN')
+  @ApiBearerAuth('JWT-auth')
   @Patch(':id')
-  @ApiOperation({ summary: 'Actualizar parcialmente los datos de una atracción' })
-  @ApiParam({ name: 'id', description: 'UUID de la atracción', type: 'string', format: 'uuid' })
-  @ApiResponse({ status: 200, description: 'La atracción ha sido actualizada.', type: AtraccionResponseDto })
-  @ApiResponse({ status: 400, description: 'Bad Request. Datos de entrada inválidos.' })
-  @ApiResponse({ status: 404, description: 'Not Found. La atracción no existe.' })
-  async update(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() updateAtraccionDto: UpdateAtraccionDto,
-  ): Promise<AtraccionResponseDto> {
-    return (await this.atraccionesService.update(id, updateAtraccionDto)) as unknown as AtraccionResponseDto;
+  @ApiOperation({ summary: 'Actualizar parcialmente una atracción', description: 'Requiere Bearer JWT y rol ADMIN.' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
+  @ApiOkResponse({ type: AtraccionResponseDto })
+  @ApiBadRequestResponse({ description: 'UUID o DTO inválido.' })
+  @ApiUnauthorizedResponse({ description: 'JWT ausente o inválido.' })
+  @ApiForbiddenResponse({ description: 'Se requiere rol ADMIN.' })
+  @ApiNotFoundResponse({ description: 'Atracción no encontrada.' })
+  @ApiBody({ type: UpdateAtraccionDto })
+  async update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateAtraccionDto): Promise<AtraccionResponseDto> {
+    return this.atraccionesService.mapAtraccionPayload(await this.atraccionesService.update(id, dto));
   }
 
-  @Roles('ADMIN', 'OPERATOR')
-  @ApiBearerAuth()
+  @Roles('ADMIN')
+  @ApiBearerAuth('JWT-auth')
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Eliminar o desactivar una atracción' })
-  @ApiParam({ name: 'id', description: 'UUID de la atracción', type: 'string', format: 'uuid' })
-  @ApiResponse({ status: 204, description: 'La atracción ha sido eliminada correctamente.' })
-  @ApiResponse({ status: 404, description: 'Not Found. La atracción no existe.' })
-  remove(@Param('id', ParseUUIDPipe) id: string): void {
-    this.atraccionesService.remove(id);
-  }
+  @ApiOperation({ summary: 'Desactivar una atracción (soft delete)', description: 'Requiere Bearer JWT y rol ADMIN.' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
+  @ApiResponse({ status: 204, description: 'Atracción desactivada sin cuerpo.' })
+  @ApiBadRequestResponse({ description: 'El id no es un UUID válido.' })
+  @ApiUnauthorizedResponse({ description: 'JWT ausente o inválido.' })
+  @ApiForbiddenResponse({ description: 'Se requiere rol ADMIN.' })
+  @ApiNotFoundResponse({ description: 'Atracción no encontrada.' })
+  async remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> { await this.atraccionesService.remove(id); }
 }
