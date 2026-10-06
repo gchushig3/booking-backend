@@ -1,0 +1,2095 @@
+{
+  "version": "PostgreSQL 16.15 (Debian 16.15-1.pgdg13+2) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit",
+  "synchronize": false,
+  "migrations": [
+    {
+      "name": "InitialBookingSchema1710000000000"
+    },
+    {
+      "name": "BookingEnums1710000001000"
+    },
+    {
+      "name": "ParticipantSnapshots1710000002000"
+    },
+    {
+      "name": "LocalizedReservationStatus1710000003000"
+    },
+    {
+      "name": "ReservationIntegrity1710000004000"
+    },
+    {
+      "name": "CommentReservationIntegrity1710000005000"
+    },
+    {
+      "name": "ReservationUserIntegrity1710000006000"
+    },
+    {
+      "name": "RequiredReservationAttraction1710000007000"
+    },
+    {
+      "name": "ReconcileLegacyConstraints1710000008000"
+    }
+  ],
+  "mismatches": [],
+  "consistency": {
+    "missing_reservation_attractions": 0,
+    "orphan_reservation_users": 0,
+    "orphan_comment_users": 0,
+    "mismatched_comments": 0,
+    "invalid_capacity": 0,
+    "inconsistent_capacity": 0
+  },
+  "tables": [
+    {
+      "name": "reservas_atracciones",
+      "columns": [
+        {
+          "isNullable": false,
+          "isGenerated": true,
+          "isPrimary": true,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "id",
+          "type": "uuid",
+          "primaryKeyConstraintName": "reservas_atracciones_pkey",
+          "generationStrategy": "uuid"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": true,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "idempotency_key",
+          "type": "uuid"
+        },
+        {
+          "isNullable": true,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "userId",
+          "type": "uuid"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "date",
+          "type": "date"
+        },
+        {
+          "isNullable": true,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "time",
+          "type": "character varying"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "ticket_count",
+          "type": "integer"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "150",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "customer_name",
+          "type": "character varying"
+        },
+        {
+          "isNullable": true,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "150",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "customer_email",
+          "type": "character varying"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "status",
+          "type": "enum",
+          "enum": [
+            "PENDIENTE",
+            "CONFIRMADA",
+            "CANCELADA"
+          ],
+          "enumName": "booking_reservation_status_enum",
+          "default": "'CONFIRMADA'"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "atraccion_id",
+          "type": "uuid"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "createdAt",
+          "type": "timestamp without time zone",
+          "default": "now()"
+        },
+        {
+          "isNullable": true,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "product_type",
+          "type": "enum",
+          "enum": [
+            "SINGLE_TICKET",
+            "GUIDED_TOUR",
+            "PACKAGE"
+          ],
+          "enumName": "booking_product_type_enum"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "num_adultos",
+          "type": "integer",
+          "default": "'1'"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "edades_ninos",
+          "type": "jsonb",
+          "default": "'[]'"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "subtotal",
+          "type": "numeric",
+          "precision": 10,
+          "scale": 2,
+          "default": "'0'"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "descuentos",
+          "type": "numeric",
+          "precision": 10,
+          "scale": 2,
+          "default": "'0'"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "monto_total",
+          "type": "numeric",
+          "precision": 10,
+          "scale": 2,
+          "default": "'0'"
+        },
+        {
+          "isNullable": true,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "paquete_id",
+          "type": "uuid"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "num_ninos",
+          "type": "integer",
+          "default": "'0'"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "total_cupos_ocupados",
+          "type": "integer",
+          "default": "'0'"
+        },
+        {
+          "isNullable": true,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "64",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "request_fingerprint",
+          "type": "character varying"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "40",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "codigo_reserva",
+          "type": "character varying"
+        },
+        {
+          "isNullable": true,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "turno_id",
+          "type": "uuid"
+        }
+      ],
+      "foreignKeys": [
+        {
+          "columnNames": [
+            "atraccion_id"
+          ],
+          "referencedColumnNames": [
+            "id"
+          ],
+          "name": "FK_3830fc024bdd9db3ba7bab2b998",
+          "referencedSchema": "public",
+          "referencedTableName": "atracciones",
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION"
+        },
+        {
+          "columnNames": [
+            "paquete_id",
+            "atraccion_id"
+          ],
+          "referencedColumnNames": [
+            "id",
+            "atraccion_id"
+          ],
+          "name": "fk_reserva_paquete_atraccion",
+          "referencedSchema": "public",
+          "referencedTableName": "paquetes_experiencias",
+          "onDelete": "NO ACTION",
+          "onUpdate": "NO ACTION"
+        },
+        {
+          "columnNames": [
+            "turno_id",
+            "atraccion_id"
+          ],
+          "referencedColumnNames": [
+            "id",
+            "atraccion_id"
+          ],
+          "name": "fk_reserva_turno_atraccion",
+          "referencedSchema": "public",
+          "referencedTableName": "disponibilidad_turnos",
+          "onDelete": "NO ACTION",
+          "onUpdate": "NO ACTION"
+        },
+        {
+          "columnNames": [
+            "userId"
+          ],
+          "referencedColumnNames": [
+            "id"
+          ],
+          "name": "fk_reserva_user",
+          "referencedSchema": "public",
+          "referencedTableName": "users",
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION"
+        }
+      ],
+      "uniques": [
+        {
+          "columnNames": [
+            "idempotency_key"
+          ],
+          "name": "reservas_atracciones_idempotencyKey_key"
+        }
+      ],
+      "indices": [
+        {
+          "columnNames": [
+            "userId",
+            "createdAt"
+          ],
+          "name": "idx_reservas_user_created",
+          "isUnique": false,
+          "isSpatial": false,
+          "isConcurrent": false,
+          "isFulltext": false,
+          "isNullFiltered": false,
+          "where": ""
+        },
+        {
+          "columnNames": [
+            "codigo_reserva"
+          ],
+          "name": "uq_reservas_codigo_reserva",
+          "isUnique": true,
+          "isSpatial": false,
+          "isConcurrent": false,
+          "isFulltext": false,
+          "isNullFiltered": false,
+          "where": ""
+        }
+      ],
+      "checks": [
+        {
+          "columnNames": [
+            "ticket_count",
+            "num_adultos"
+          ],
+          "name": "chk_reserva_participants",
+          "expression": "((ticket_count > 0) AND (num_adultos >= 0))"
+        },
+        {
+          "columnNames": [
+            "ticket_count",
+            "num_adultos",
+            "num_ninos",
+            "total_cupos_ocupados"
+          ],
+          "name": "chk_reservation_seat_snapshot",
+          "expression": "((num_adultos >= 0) AND (num_ninos >= 0) AND (total_cupos_ocupados = (num_adultos + num_ninos)) AND (total_cupos_ocupados = ticket_count))"
+        }
+      ]
+    },
+    {
+      "name": "atracciones",
+      "columns": [
+        {
+          "isNullable": false,
+          "isGenerated": true,
+          "isPrimary": true,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "id",
+          "type": "uuid",
+          "primaryKeyConstraintName": "atracciones_pkey",
+          "generationStrategy": "uuid"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "255",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "nombre",
+          "type": "character varying"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "descripcion",
+          "type": "text"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "100",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "ciudad",
+          "type": "character varying"
+        },
+        {
+          "isNullable": true,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "price",
+          "type": "jsonb"
+        },
+        {
+          "isNullable": true,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "operator",
+          "type": "jsonb"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "product_type",
+          "type": "enum",
+          "enum": [
+            "SINGLE_TICKET",
+            "GUIDED_TOUR",
+            "PACKAGE"
+          ],
+          "enumName": "booking_product_type_enum",
+          "default": "'SINGLE_TICKET'"
+        },
+        {
+          "isNullable": true,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "categories",
+          "type": "jsonb"
+        },
+        {
+          "isNullable": true,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "includes",
+          "type": "jsonb"
+        },
+        {
+          "isNullable": true,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "supported_languages",
+          "type": "jsonb"
+        },
+        {
+          "isNullable": true,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "badges",
+          "type": "jsonb"
+        },
+        {
+          "isNullable": true,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "locations",
+          "type": "jsonb"
+        },
+        {
+          "isNullable": true,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "photos",
+          "type": "jsonb"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "latitud",
+          "type": "numeric",
+          "precision": 10,
+          "scale": 6
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "longitud",
+          "type": "numeric",
+          "precision": 10,
+          "scale": 6
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "precioTicket",
+          "type": "numeric",
+          "precision": 10,
+          "scale": 2
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "duracionHoras",
+          "type": "integer"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "estaActivo",
+          "type": "boolean",
+          "default": "true"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "createdAt",
+          "type": "timestamp without time zone",
+          "default": "now()"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "updatedAt",
+          "type": "timestamp without time zone",
+          "default": "now()"
+        },
+        {
+          "isNullable": true,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "deletedAt",
+          "type": "timestamp without time zone"
+        },
+        {
+          "isNullable": true,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "package_prices",
+          "type": "jsonb"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "100",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "provincia",
+          "type": "character varying",
+          "default": "''"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "50",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "region",
+          "type": "character varying",
+          "default": "''"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "80",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "categoria",
+          "type": "character varying",
+          "default": "'Tours'"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "imagenes",
+          "type": "jsonb",
+          "default": "'[]'"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "precioBase",
+          "type": "numeric",
+          "precision": 10,
+          "scale": 2,
+          "default": "'0'"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "cuposTotales",
+          "type": "integer",
+          "default": "'30'"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "tipoExperienciaPermitidos",
+          "type": "jsonb",
+          "default": "'[\"SINGLE_TICKET\", \"GUIDED_TOUR\", \"PACKAGE\"]'"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "horariosDisponibles",
+          "type": "jsonb",
+          "default": "'[\"08:00\", \"10:00\", \"14:00\"]'"
+        }
+      ],
+      "foreignKeys": [],
+      "uniques": [],
+      "indices": [
+        {
+          "columnNames": [
+            "provincia"
+          ],
+          "name": "idx_atracciones_provincia",
+          "isUnique": false,
+          "isSpatial": false,
+          "isConcurrent": false,
+          "isFulltext": false,
+          "isNullFiltered": false,
+          "where": ""
+        },
+        {
+          "columnNames": [
+            "region"
+          ],
+          "name": "idx_atracciones_region",
+          "isUnique": false,
+          "isSpatial": false,
+          "isConcurrent": false,
+          "isFulltext": false,
+          "isNullFiltered": false,
+          "where": ""
+        },
+        {
+          "columnNames": [
+            "categoria"
+          ],
+          "name": "idx_atracciones_categoria",
+          "isUnique": false,
+          "isSpatial": false,
+          "isConcurrent": false,
+          "isFulltext": false,
+          "isNullFiltered": false,
+          "where": ""
+        },
+        {
+          "columnNames": [
+            "nombre"
+          ],
+          "name": "idx_atracciones_nombre",
+          "isUnique": false,
+          "isSpatial": false,
+          "isConcurrent": false,
+          "isFulltext": false,
+          "isNullFiltered": false,
+          "where": ""
+        }
+      ],
+      "checks": []
+    },
+    {
+      "name": "disponibilidad_turnos",
+      "columns": [
+        {
+          "isNullable": false,
+          "isGenerated": true,
+          "isPrimary": true,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "id",
+          "type": "uuid",
+          "generationStrategy": "uuid"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "atraccion_id",
+          "type": "uuid"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "fecha",
+          "type": "date"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "hora_inicio",
+          "type": "time without time zone"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "capacidad_total",
+          "type": "integer"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "cupos_reservados",
+          "type": "integer",
+          "default": "'0'"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()"
+        }
+      ],
+      "foreignKeys": [
+        {
+          "columnNames": [
+            "atraccion_id"
+          ],
+          "referencedColumnNames": [
+            "id"
+          ],
+          "name": "FK_b229ebb78ee166b3c8b8165746f",
+          "referencedSchema": "public",
+          "referencedTableName": "atracciones",
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION"
+        }
+      ],
+      "uniques": [],
+      "indices": [
+        {
+          "columnNames": [
+            "atraccion_id",
+            "fecha",
+            "hora_inicio"
+          ],
+          "name": "UQ_disponibilidad_atraccion_fecha_hora",
+          "isUnique": true,
+          "isSpatial": false,
+          "isConcurrent": false,
+          "isFulltext": false,
+          "isNullFiltered": false,
+          "where": ""
+        },
+        {
+          "columnNames": [
+            "id",
+            "atraccion_id"
+          ],
+          "name": "uq_turno_id_atraccion",
+          "isUnique": true,
+          "isSpatial": false,
+          "isConcurrent": false,
+          "isFulltext": false,
+          "isNullFiltered": false,
+          "where": ""
+        }
+      ],
+      "checks": [
+        {
+          "columnNames": [
+            "capacidad_total"
+          ],
+          "name": "disponibilidad_turnos_capacidad_total_check",
+          "expression": "(capacidad_total >= 0)"
+        },
+        {
+          "columnNames": [
+            "capacidad_total",
+            "cupos_reservados"
+          ],
+          "name": "disponibilidad_turnos_check",
+          "expression": "((cupos_reservados >= 0) AND (cupos_reservados <= capacidad_total))"
+        }
+      ]
+    },
+    {
+      "name": "paquetes_experiencias",
+      "columns": [
+        {
+          "isNullable": false,
+          "isGenerated": true,
+          "isPrimary": true,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "id",
+          "type": "uuid",
+          "generationStrategy": "uuid"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "atraccion_id",
+          "type": "uuid"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "tipo_experiencia",
+          "type": "enum",
+          "enum": [
+            "SINGLE_TICKET",
+            "GUIDED_TOUR",
+            "PACKAGE"
+          ],
+          "enumName": "booking_product_type_enum"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "100",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "nombre_paquete",
+          "type": "character varying"
+        },
+        {
+          "isNullable": true,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "descripcion",
+          "type": "text"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "precio_unitario",
+          "type": "numeric",
+          "precision": 10,
+          "scale": 2
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "min_participantes",
+          "type": "integer",
+          "default": "'1'"
+        },
+        {
+          "isNullable": true,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "max_participantes",
+          "type": "integer"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "politicas_json",
+          "type": "jsonb",
+          "default": "'{}'"
+        }
+      ],
+      "foreignKeys": [
+        {
+          "columnNames": [
+            "atraccion_id"
+          ],
+          "referencedColumnNames": [
+            "id"
+          ],
+          "name": "FK_a735bf46748f2950687d3286e52",
+          "referencedSchema": "public",
+          "referencedTableName": "atracciones",
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION"
+        }
+      ],
+      "uniques": [],
+      "indices": [
+        {
+          "columnNames": [
+            "id",
+            "atraccion_id"
+          ],
+          "name": "uq_paquete_id_atraccion",
+          "isUnique": true,
+          "isSpatial": false,
+          "isConcurrent": false,
+          "isFulltext": false,
+          "isNullFiltered": false,
+          "where": ""
+        }
+      ],
+      "checks": [
+        {
+          "columnNames": [
+            "precio_unitario"
+          ],
+          "name": "paquetes_experiencias_precio_unitario_check",
+          "expression": "(precio_unitario >= (0)::numeric)"
+        }
+      ]
+    },
+    {
+      "name": "observabilidad_eventos",
+      "columns": [
+        {
+          "isNullable": false,
+          "isGenerated": true,
+          "isPrimary": true,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "id",
+          "type": "uuid",
+          "generationStrategy": "uuid"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "50",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "tipo_evento",
+          "type": "character varying"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "200",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "endpoint_ruta",
+          "type": "character varying"
+        },
+        {
+          "isNullable": true,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "latencia_ms",
+          "type": "integer"
+        },
+        {
+          "isNullable": true,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "user_id",
+          "type": "uuid"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "payload_json",
+          "type": "jsonb",
+          "default": "'{}'"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()"
+        }
+      ],
+      "foreignKeys": [],
+      "uniques": [],
+      "indices": [
+        {
+          "columnNames": [
+            "tipo_evento",
+            "created_at"
+          ],
+          "name": "idx_eventos_type_created",
+          "isUnique": false,
+          "isSpatial": false,
+          "isConcurrent": false,
+          "isFulltext": false,
+          "isNullFiltered": false,
+          "where": ""
+        }
+      ],
+      "checks": []
+    },
+    {
+      "name": "pagos",
+      "columns": [
+        {
+          "isNullable": false,
+          "isGenerated": true,
+          "isPrimary": true,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "id",
+          "type": "uuid",
+          "generationStrategy": "uuid"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "reserva_id",
+          "type": "uuid"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "metodo_pago",
+          "type": "enum",
+          "enum": [
+            "CREDIT_CARD",
+            "PAYPAL"
+          ],
+          "enumName": "booking_payment_method_enum"
+        },
+        {
+          "isNullable": true,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "150",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "titular_tarjeta",
+          "type": "character varying"
+        },
+        {
+          "isNullable": true,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "4",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "ultimos_cuatro_digitos",
+          "type": "character varying"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "monto_pagado",
+          "type": "numeric",
+          "precision": 10,
+          "scale": 2
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": true,
+          "isArray": false,
+          "length": "100",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "transaccion_hash",
+          "type": "character varying"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "fecha_pago",
+          "type": "timestamp with time zone",
+          "default": "now()"
+        }
+      ],
+      "foreignKeys": [
+        {
+          "columnNames": [
+            "reserva_id"
+          ],
+          "referencedColumnNames": [
+            "id"
+          ],
+          "name": "FK_3aaf58c87393e9ccbdccffe0f5b",
+          "referencedSchema": "public",
+          "referencedTableName": "reservas_atracciones",
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION"
+        }
+      ],
+      "uniques": [
+        {
+          "columnNames": [
+            "transaccion_hash"
+          ],
+          "name": "UQ_2d74ba448e987e1676417877fcf"
+        }
+      ],
+      "indices": [],
+      "checks": [
+        {
+          "columnNames": [
+            "monto_pagado"
+          ],
+          "name": "pagos_monto_pagado_check",
+          "expression": "(monto_pagado >= (0)::numeric)"
+        }
+      ]
+    },
+    {
+      "name": "comentarios",
+      "columns": [
+        {
+          "isNullable": false,
+          "isGenerated": true,
+          "isPrimary": true,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "id",
+          "type": "uuid",
+          "generationStrategy": "uuid"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "atraccion_id",
+          "type": "uuid"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "user_id",
+          "type": "uuid"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "puntuacion",
+          "type": "integer"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "comentario",
+          "type": "text"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "fecha_creacion",
+          "type": "timestamp with time zone",
+          "default": "now()"
+        },
+        {
+          "isNullable": true,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "reserva_id",
+          "type": "uuid"
+        }
+      ],
+      "foreignKeys": [
+        {
+          "columnNames": [
+            "atraccion_id"
+          ],
+          "referencedColumnNames": [
+            "id"
+          ],
+          "name": "FK_f70dd8974bef8b0306c0be4ea9f",
+          "referencedSchema": "public",
+          "referencedTableName": "atracciones",
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION"
+        },
+        {
+          "columnNames": [
+            "reserva_id"
+          ],
+          "referencedColumnNames": [
+            "id"
+          ],
+          "name": "fk_comentario_reserva",
+          "referencedSchema": "public",
+          "referencedTableName": "reservas_atracciones",
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION"
+        },
+        {
+          "columnNames": [
+            "user_id"
+          ],
+          "referencedColumnNames": [
+            "id"
+          ],
+          "name": "comentarios_user_id_fkey",
+          "referencedSchema": "public",
+          "referencedTableName": "users",
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION"
+        }
+      ],
+      "uniques": [],
+      "indices": [
+        {
+          "columnNames": [
+            "atraccion_id",
+            "fecha_creacion"
+          ],
+          "name": "idx_comments_attraction_created",
+          "isUnique": false,
+          "isSpatial": false,
+          "isConcurrent": false,
+          "isFulltext": false,
+          "isNullFiltered": false,
+          "where": ""
+        },
+        {
+          "columnNames": [
+            "reserva_id"
+          ],
+          "name": "uq_comentario_reserva",
+          "isUnique": true,
+          "isSpatial": false,
+          "isConcurrent": false,
+          "isFulltext": false,
+          "isNullFiltered": false,
+          "where": ""
+        },
+        {
+          "columnNames": [
+            "atraccion_id",
+            "fecha_creacion"
+          ],
+          "name": "idx_comentarios_atraccion_fecha",
+          "isUnique": false,
+          "isSpatial": false,
+          "isConcurrent": false,
+          "isFulltext": false,
+          "isNullFiltered": false,
+          "where": ""
+        }
+      ],
+      "checks": [
+        {
+          "columnNames": [
+            "puntuacion"
+          ],
+          "name": "CHK_comentario_puntuacion",
+          "expression": "((puntuacion >= 1) AND (puntuacion <= 5))"
+        }
+      ]
+    },
+    {
+      "name": "users",
+      "columns": [
+        {
+          "isNullable": false,
+          "isGenerated": true,
+          "isPrimary": true,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "id",
+          "type": "uuid",
+          "generationStrategy": "uuid"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "120",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "name",
+          "type": "character varying"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": true,
+          "isArray": false,
+          "length": "255",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "email",
+          "type": "character varying"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "255",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "password_hash",
+          "type": "character varying"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "role",
+          "type": "enum",
+          "enum": [
+            "CLIENTE",
+            "ADMIN"
+          ],
+          "enumName": "booking_user_role_enum",
+          "default": "'CLIENTE'"
+        },
+        {
+          "isNullable": false,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "createdAt",
+          "type": "timestamp without time zone",
+          "default": "now()"
+        },
+        {
+          "isNullable": true,
+          "isGenerated": false,
+          "isPrimary": false,
+          "isUnique": false,
+          "isArray": false,
+          "length": "20",
+          "zerofill": false,
+          "unsigned": false,
+          "name": "cedula_dni",
+          "type": "character varying"
+        }
+      ],
+      "foreignKeys": [],
+      "uniques": [
+        {
+          "columnNames": [
+            "email"
+          ],
+          "name": "UQ_97672ac88f789774dd47f7c8be3"
+        }
+      ],
+      "indices": [
+        {
+          "columnNames": [
+            "cedula_dni"
+          ],
+          "name": "uq_users_cedula_dni",
+          "isUnique": true,
+          "isSpatial": false,
+          "isConcurrent": false,
+          "isFulltext": false,
+          "isNullFiltered": false,
+          "where": "(cedula_dni IS NOT NULL)"
+        }
+      ],
+      "checks": []
+    }
+  ],
+  "constraints": [
+    {
+      "table_name": "atracciones",
+      "conname": "atracciones_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "comentarios",
+      "conname": "CHK_comentario_puntuacion",
+      "contype": "c",
+      "definition": "CHECK (((puntuacion >= 1) AND (puntuacion <= 5)))"
+    },
+    {
+      "table_name": "comentarios",
+      "conname": "FK_f70dd8974bef8b0306c0be4ea9f",
+      "contype": "f",
+      "definition": "FOREIGN KEY (atraccion_id) REFERENCES atracciones(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "comentarios",
+      "conname": "PK_b60b1468bb275db8d5e875c4a78",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "comentarios",
+      "conname": "comentarios_user_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "comentarios",
+      "conname": "fk_comentario_reserva",
+      "contype": "f",
+      "definition": "FOREIGN KEY (reserva_id) REFERENCES reservas_atracciones(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "disponibilidad_turnos",
+      "conname": "FK_b229ebb78ee166b3c8b8165746f",
+      "contype": "f",
+      "definition": "FOREIGN KEY (atraccion_id) REFERENCES atracciones(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "disponibilidad_turnos",
+      "conname": "PK_fcd4bbbad7e4cc66b7411f7b4af",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "disponibilidad_turnos",
+      "conname": "disponibilidad_turnos_capacidad_total_check",
+      "contype": "c",
+      "definition": "CHECK ((capacidad_total >= 0))"
+    },
+    {
+      "table_name": "disponibilidad_turnos",
+      "conname": "disponibilidad_turnos_check",
+      "contype": "c",
+      "definition": "CHECK (((cupos_reservados >= 0) AND (cupos_reservados <= capacidad_total)))"
+    },
+    {
+      "table_name": "migrations",
+      "conname": "PK_8c82d7f526340ab734260ea46be",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "observabilidad_eventos",
+      "conname": "PK_7e87cbd94adf7d90fa3cc44298d",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "pagos",
+      "conname": "FK_3aaf58c87393e9ccbdccffe0f5b",
+      "contype": "f",
+      "definition": "FOREIGN KEY (reserva_id) REFERENCES reservas_atracciones(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "pagos",
+      "conname": "PK_37321ca70a2ed50885dc205beb2",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "pagos",
+      "conname": "UQ_2d74ba448e987e1676417877fcf",
+      "contype": "u",
+      "definition": "UNIQUE (transaccion_hash)"
+    },
+    {
+      "table_name": "pagos",
+      "conname": "pagos_monto_pagado_check",
+      "contype": "c",
+      "definition": "CHECK ((monto_pagado >= (0)::numeric))"
+    },
+    {
+      "table_name": "paquetes_experiencias",
+      "conname": "FK_a735bf46748f2950687d3286e52",
+      "contype": "f",
+      "definition": "FOREIGN KEY (atraccion_id) REFERENCES atracciones(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "paquetes_experiencias",
+      "conname": "PK_949a017ee6373b1d1e41379e43a",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "paquetes_experiencias",
+      "conname": "paquetes_experiencias_precio_unitario_check",
+      "contype": "c",
+      "definition": "CHECK ((precio_unitario >= (0)::numeric))"
+    },
+    {
+      "table_name": "reservas_atracciones",
+      "conname": "FK_3830fc024bdd9db3ba7bab2b998",
+      "contype": "f",
+      "definition": "FOREIGN KEY (atraccion_id) REFERENCES atracciones(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "reservas_atracciones",
+      "conname": "chk_reserva_participants",
+      "contype": "c",
+      "definition": "CHECK (((ticket_count > 0) AND (num_adultos >= 0)))"
+    },
+    {
+      "table_name": "reservas_atracciones",
+      "conname": "chk_reservation_seat_snapshot",
+      "contype": "c",
+      "definition": "CHECK (((num_adultos >= 0) AND (num_ninos >= 0) AND (total_cupos_ocupados = (num_adultos + num_ninos)) AND (total_cupos_ocupados = ticket_count)))"
+    },
+    {
+      "table_name": "reservas_atracciones",
+      "conname": "fk_reserva_paquete_atraccion",
+      "contype": "f",
+      "definition": "FOREIGN KEY (paquete_id, atraccion_id) REFERENCES paquetes_experiencias(id, atraccion_id)"
+    },
+    {
+      "table_name": "reservas_atracciones",
+      "conname": "fk_reserva_turno_atraccion",
+      "contype": "f",
+      "definition": "FOREIGN KEY (turno_id, atraccion_id) REFERENCES disponibilidad_turnos(id, atraccion_id)"
+    },
+    {
+      "table_name": "reservas_atracciones",
+      "conname": "fk_reserva_user",
+      "contype": "f",
+      "definition": "FOREIGN KEY (\"userId\") REFERENCES users(id) ON DELETE RESTRICT"
+    },
+    {
+      "table_name": "reservas_atracciones",
+      "conname": "reservas_atracciones_idempotencyKey_key",
+      "contype": "u",
+      "definition": "UNIQUE (idempotency_key)"
+    },
+    {
+      "table_name": "reservas_atracciones",
+      "conname": "reservas_atracciones_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "users",
+      "conname": "PK_a3ffb1c0c8416b9fc6f907b7433",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "users",
+      "conname": "UQ_97672ac88f789774dd47f7c8be3",
+      "contype": "u",
+      "definition": "UNIQUE (email)"
+    }
+  ],
+  "indexes": [
+    {
+      "tablename": "atracciones",
+      "indexname": "atracciones_pkey",
+      "indexdef": "CREATE UNIQUE INDEX atracciones_pkey ON public.atracciones USING btree (id)"
+    },
+    {
+      "tablename": "atracciones",
+      "indexname": "idx_atracciones_categoria",
+      "indexdef": "CREATE INDEX idx_atracciones_categoria ON public.atracciones USING btree (categoria)"
+    },
+    {
+      "tablename": "atracciones",
+      "indexname": "idx_atracciones_nombre",
+      "indexdef": "CREATE INDEX idx_atracciones_nombre ON public.atracciones USING btree (nombre)"
+    },
+    {
+      "tablename": "atracciones",
+      "indexname": "idx_atracciones_provincia",
+      "indexdef": "CREATE INDEX idx_atracciones_provincia ON public.atracciones USING btree (provincia)"
+    },
+    {
+      "tablename": "atracciones",
+      "indexname": "idx_atracciones_region",
+      "indexdef": "CREATE INDEX idx_atracciones_region ON public.atracciones USING btree (region)"
+    },
+    {
+      "tablename": "comentarios",
+      "indexname": "PK_b60b1468bb275db8d5e875c4a78",
+      "indexdef": "CREATE UNIQUE INDEX \"PK_b60b1468bb275db8d5e875c4a78\" ON public.comentarios USING btree (id)"
+    },
+    {
+      "tablename": "comentarios",
+      "indexname": "idx_comentarios_atraccion_fecha",
+      "indexdef": "CREATE INDEX idx_comentarios_atraccion_fecha ON public.comentarios USING btree (atraccion_id, fecha_creacion DESC)"
+    },
+    {
+      "tablename": "comentarios",
+      "indexname": "idx_comments_attraction_created",
+      "indexdef": "CREATE INDEX idx_comments_attraction_created ON public.comentarios USING btree (atraccion_id, fecha_creacion DESC)"
+    },
+    {
+      "tablename": "comentarios",
+      "indexname": "uq_comentario_reserva",
+      "indexdef": "CREATE UNIQUE INDEX uq_comentario_reserva ON public.comentarios USING btree (reserva_id)"
+    },
+    {
+      "tablename": "disponibilidad_turnos",
+      "indexname": "PK_fcd4bbbad7e4cc66b7411f7b4af",
+      "indexdef": "CREATE UNIQUE INDEX \"PK_fcd4bbbad7e4cc66b7411f7b4af\" ON public.disponibilidad_turnos USING btree (id)"
+    },
+    {
+      "tablename": "disponibilidad_turnos",
+      "indexname": "UQ_disponibilidad_atraccion_fecha_hora",
+      "indexdef": "CREATE UNIQUE INDEX \"UQ_disponibilidad_atraccion_fecha_hora\" ON public.disponibilidad_turnos USING btree (atraccion_id, fecha, hora_inicio)"
+    },
+    {
+      "tablename": "disponibilidad_turnos",
+      "indexname": "uq_turno_id_atraccion",
+      "indexdef": "CREATE UNIQUE INDEX uq_turno_id_atraccion ON public.disponibilidad_turnos USING btree (id, atraccion_id)"
+    },
+    {
+      "tablename": "migrations",
+      "indexname": "PK_8c82d7f526340ab734260ea46be",
+      "indexdef": "CREATE UNIQUE INDEX \"PK_8c82d7f526340ab734260ea46be\" ON public.migrations USING btree (id)"
+    },
+    {
+      "tablename": "observabilidad_eventos",
+      "indexname": "PK_7e87cbd94adf7d90fa3cc44298d",
+      "indexdef": "CREATE UNIQUE INDEX \"PK_7e87cbd94adf7d90fa3cc44298d\" ON public.observabilidad_eventos USING btree (id)"
+    },
+    {
+      "tablename": "observabilidad_eventos",
+      "indexname": "idx_eventos_type_created",
+      "indexdef": "CREATE INDEX idx_eventos_type_created ON public.observabilidad_eventos USING btree (tipo_evento, created_at DESC)"
+    },
+    {
+      "tablename": "pagos",
+      "indexname": "PK_37321ca70a2ed50885dc205beb2",
+      "indexdef": "CREATE UNIQUE INDEX \"PK_37321ca70a2ed50885dc205beb2\" ON public.pagos USING btree (id)"
+    },
+    {
+      "tablename": "pagos",
+      "indexname": "UQ_2d74ba448e987e1676417877fcf",
+      "indexdef": "CREATE UNIQUE INDEX \"UQ_2d74ba448e987e1676417877fcf\" ON public.pagos USING btree (transaccion_hash)"
+    },
+    {
+      "tablename": "paquetes_experiencias",
+      "indexname": "PK_949a017ee6373b1d1e41379e43a",
+      "indexdef": "CREATE UNIQUE INDEX \"PK_949a017ee6373b1d1e41379e43a\" ON public.paquetes_experiencias USING btree (id)"
+    },
+    {
+      "tablename": "paquetes_experiencias",
+      "indexname": "uq_paquete_id_atraccion",
+      "indexdef": "CREATE UNIQUE INDEX uq_paquete_id_atraccion ON public.paquetes_experiencias USING btree (id, atraccion_id)"
+    },
+    {
+      "tablename": "reservas_atracciones",
+      "indexname": "idx_reservas_user_created",
+      "indexdef": "CREATE INDEX idx_reservas_user_created ON public.reservas_atracciones USING btree (\"userId\", \"createdAt\" DESC)"
+    },
+    {
+      "tablename": "reservas_atracciones",
+      "indexname": "reservas_atracciones_idempotencyKey_key",
+      "indexdef": "CREATE UNIQUE INDEX \"reservas_atracciones_idempotencyKey_key\" ON public.reservas_atracciones USING btree (idempotency_key)"
+    },
+    {
+      "tablename": "reservas_atracciones",
+      "indexname": "reservas_atracciones_pkey",
+      "indexdef": "CREATE UNIQUE INDEX reservas_atracciones_pkey ON public.reservas_atracciones USING btree (id)"
+    },
+    {
+      "tablename": "reservas_atracciones",
+      "indexname": "uq_reservas_codigo_reserva",
+      "indexdef": "CREATE UNIQUE INDEX uq_reservas_codigo_reserva ON public.reservas_atracciones USING btree (codigo_reserva)"
+    },
+    {
+      "tablename": "users",
+      "indexname": "PK_a3ffb1c0c8416b9fc6f907b7433",
+      "indexdef": "CREATE UNIQUE INDEX \"PK_a3ffb1c0c8416b9fc6f907b7433\" ON public.users USING btree (id)"
+    },
+    {
+      "tablename": "users",
+      "indexname": "UQ_97672ac88f789774dd47f7c8be3",
+      "indexdef": "CREATE UNIQUE INDEX \"UQ_97672ac88f789774dd47f7c8be3\" ON public.users USING btree (email)"
+    },
+    {
+      "tablename": "users",
+      "indexname": "uq_users_cedula_dni",
+      "indexdef": "CREATE UNIQUE INDEX uq_users_cedula_dni ON public.users USING btree (cedula_dni) WHERE (cedula_dni IS NOT NULL)"
+    }
+  ]
+}

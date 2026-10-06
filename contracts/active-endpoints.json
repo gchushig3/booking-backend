@@ -1,0 +1,543 @@
+[
+  {
+    "method": "get",
+    "path": "/api/v1/admin/observabilidad/eventos",
+    "controller": "AdminTelemetryController",
+    "handler": "recent",
+    "public": false,
+    "roles": [
+      "ADMIN"
+    ],
+    "status": 200,
+    "inputs": []
+  },
+  {
+    "method": "get",
+    "path": "/api/v1/admin/observabilidad/resumen",
+    "controller": "AdminTelemetryController",
+    "handler": "summary",
+    "public": false,
+    "roles": [
+      "ADMIN"
+    ],
+    "status": 200,
+    "inputs": []
+  },
+  {
+    "method": "get",
+    "path": "/api/v1/admin/observabilidad/stream",
+    "controller": "AdminTelemetryController",
+    "handler": "stream",
+    "public": false,
+    "roles": [
+      "ADMIN"
+    ],
+    "status": 200,
+    "inputs": []
+  },
+  {
+    "method": "get",
+    "path": "/api/v1/admin/reservas",
+    "controller": "AdminReservasController",
+    "handler": "list",
+    "public": false,
+    "roles": [
+      "ADMIN"
+    ],
+    "status": 200,
+    "inputs": []
+  },
+  {
+    "method": "get",
+    "path": "/api/v1/atracciones/{id}/availability",
+    "controller": "AtraccionesController",
+    "handler": "getAvailability",
+    "public": true,
+    "roles": [],
+    "status": 200,
+    "inputs": [
+      {
+        "kind": 4,
+        "name": "time",
+        "dto": "String",
+        "fields": []
+      },
+      {
+        "kind": 4,
+        "name": "product_type",
+        "dto": "String",
+        "fields": []
+      },
+      {
+        "kind": 4,
+        "name": "date",
+        "dto": "String",
+        "fields": []
+      },
+      {
+        "kind": 5,
+        "name": "id",
+        "dto": "String",
+        "fields": []
+      }
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/api/v1/atracciones/{id}/comentarios",
+    "controller": "ComentariosController",
+    "handler": "list",
+    "public": false,
+    "roles": [],
+    "status": 200,
+    "inputs": [
+      {
+        "kind": 5,
+        "name": "id",
+        "dto": "String",
+        "fields": []
+      }
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/api/v1/atracciones/{id}/comentarios",
+    "controller": "ComentariosController",
+    "handler": "create",
+    "public": false,
+    "roles": [],
+    "status": 201,
+    "inputs": [
+      {
+        "kind": 0,
+        "dto": "Object",
+        "fields": []
+      },
+      {
+        "kind": 3,
+        "dto": "CreateComentarioDto",
+        "fields": [
+          "comentario",
+          "puntuacion",
+          "reservation_id"
+        ]
+      },
+      {
+        "kind": 5,
+        "name": "id",
+        "dto": "String",
+        "fields": []
+      }
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/api/v1/atracciones/{id}/paquetes",
+    "controller": "AtraccionesController",
+    "handler": "getPackages",
+    "public": true,
+    "roles": [],
+    "status": 200,
+    "inputs": [
+      {
+        "kind": 5,
+        "name": "id",
+        "dto": "String",
+        "fields": []
+      }
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/api/v1/atracciones/{id}/reservations",
+    "controller": "AtraccionesController",
+    "handler": "reserve",
+    "public": false,
+    "roles": [],
+    "status": 201,
+    "inputs": [
+      {
+        "kind": 0,
+        "dto": "Object",
+        "fields": []
+      },
+      {
+        "kind": 3,
+        "dto": "ReservationRequestDto",
+        "fields": [
+          "customer_email",
+          "customer_name",
+          "date",
+          "metodo_pago",
+          "ninos",
+          "num_adultos",
+          "paquete_id",
+          "product_type",
+          "ticket_count",
+          "time",
+          "titular_tarjeta",
+          "ultimos_cuatro_digitos"
+        ]
+      },
+      {
+        "kind": 5,
+        "name": "id",
+        "dto": "String",
+        "fields": []
+      }
+    ]
+  },
+  {
+    "method": "delete",
+    "path": "/api/v1/atracciones/{id}",
+    "controller": "AtraccionesController",
+    "handler": "remove",
+    "public": false,
+    "roles": [
+      "ADMIN"
+    ],
+    "status": 204,
+    "inputs": [
+      {
+        "kind": 5,
+        "name": "id",
+        "dto": "String",
+        "fields": []
+      }
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/api/v1/atracciones/{id}",
+    "controller": "AtraccionesController",
+    "handler": "getAttraction",
+    "public": true,
+    "roles": [],
+    "status": 200,
+    "inputs": [
+      {
+        "kind": 5,
+        "name": "id",
+        "dto": "String",
+        "fields": []
+      }
+    ]
+  },
+  {
+    "method": "patch",
+    "path": "/api/v1/atracciones/{id}",
+    "controller": "AtraccionesController",
+    "handler": "update",
+    "public": false,
+    "roles": [
+      "ADMIN"
+    ],
+    "status": 200,
+    "inputs": [
+      {
+        "kind": 3,
+        "dto": "UpdateAtraccionDto",
+        "fields": [
+          "badges",
+          "categories",
+          "duration",
+          "free_cancellation",
+          "includes",
+          "locations",
+          "long_description",
+          "name",
+          "operator",
+          "package_prices",
+          "photos",
+          "price",
+          "product_type",
+          "supported_languages"
+        ]
+      },
+      {
+        "kind": 5,
+        "name": "id",
+        "dto": "String",
+        "fields": []
+      }
+    ]
+  },
+  {
+    "method": "put",
+    "path": "/api/v1/atracciones/{id}",
+    "controller": "AtraccionesController",
+    "handler": "replace",
+    "public": false,
+    "roles": [
+      "ADMIN"
+    ],
+    "status": 204,
+    "inputs": [
+      {
+        "kind": 3,
+        "dto": "CreateAtraccionDto",
+        "fields": [
+          "badges",
+          "categories",
+          "duration",
+          "free_cancellation",
+          "includes",
+          "locations",
+          "long_description",
+          "name",
+          "operator",
+          "package_prices",
+          "photos",
+          "price",
+          "product_type",
+          "supported_languages"
+        ]
+      },
+      {
+        "kind": 5,
+        "name": "id",
+        "dto": "String",
+        "fields": []
+      }
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/api/v1/atracciones/details",
+    "controller": "AtraccionesController",
+    "handler": "getDetailsBatch",
+    "public": true,
+    "roles": [],
+    "status": 200,
+    "inputs": [
+      {
+        "kind": 3,
+        "dto": "DetailsRequestDto",
+        "fields": [
+          "attractions",
+          "languages",
+          "product_type"
+        ]
+      }
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/api/v1/atracciones/health",
+    "controller": "AtraccionesController",
+    "handler": "checkHealth",
+    "public": true,
+    "roles": [],
+    "status": 200,
+    "inputs": []
+  },
+  {
+    "method": "post",
+    "path": "/api/v1/atracciones/reservations/{reservationId}/cancel",
+    "controller": "AtraccionesController",
+    "handler": "cancelReservation",
+    "public": false,
+    "roles": [],
+    "status": 200,
+    "inputs": [
+      {
+        "kind": 0,
+        "dto": "Object",
+        "fields": []
+      },
+      {
+        "kind": 3,
+        "dto": "CancelReservationRequestDto",
+        "fields": [
+          "reason"
+        ]
+      },
+      {
+        "kind": 5,
+        "name": "reservationId",
+        "dto": "String",
+        "fields": []
+      }
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/api/v1/atracciones/reservations/{reservationId}",
+    "controller": "AtraccionesController",
+    "handler": "getReservationById",
+    "public": false,
+    "roles": [],
+    "status": 200,
+    "inputs": [
+      {
+        "kind": 0,
+        "dto": "Object",
+        "fields": []
+      },
+      {
+        "kind": 5,
+        "name": "reservationId",
+        "dto": "String",
+        "fields": []
+      }
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/api/v1/atracciones/reservations",
+    "controller": "AtraccionesController",
+    "handler": "getReservations",
+    "public": false,
+    "roles": [],
+    "status": 200,
+    "inputs": [
+      {
+        "kind": 0,
+        "dto": "Object",
+        "fields": []
+      }
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/api/v1/atracciones/search",
+    "controller": "AtraccionesController",
+    "handler": "search",
+    "public": true,
+    "roles": [],
+    "status": 200,
+    "inputs": [
+      {
+        "kind": 3,
+        "dto": "SearchAtraccionesDto",
+        "fields": [
+          "cities",
+          "countries",
+          "currency",
+          "dates",
+          "filters",
+          "next_page",
+          "product_type",
+          "rows",
+          "sort"
+        ]
+      }
+    ]
+  },
+  {
+    "method": "get",
+    "path": "/api/v1/atracciones",
+    "controller": "AtraccionesController",
+    "handler": "findAll",
+    "public": true,
+    "roles": [],
+    "status": 200,
+    "inputs": [
+      {
+        "kind": 4,
+        "dto": "GetAtraccionesFilterDto",
+        "fields": [
+          "limit",
+          "page",
+          "product_type"
+        ]
+      }
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/api/v1/atracciones",
+    "controller": "AtraccionesController",
+    "handler": "create",
+    "public": false,
+    "roles": [
+      "ADMIN"
+    ],
+    "status": 201,
+    "inputs": [
+      {
+        "kind": 1,
+        "dto": "Object",
+        "fields": []
+      },
+      {
+        "kind": 3,
+        "dto": "CreateAtraccionDto",
+        "fields": [
+          "badges",
+          "categories",
+          "duration",
+          "free_cancellation",
+          "includes",
+          "locations",
+          "long_description",
+          "name",
+          "operator",
+          "package_prices",
+          "photos",
+          "price",
+          "product_type",
+          "supported_languages"
+        ]
+      }
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/api/v1/auth/login",
+    "controller": "AuthController",
+    "handler": "login",
+    "public": true,
+    "roles": [],
+    "status": 200,
+    "inputs": [
+      {
+        "kind": 3,
+        "dto": "LoginDto",
+        "fields": [
+          "email",
+          "password"
+        ]
+      }
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/api/v1/auth/register",
+    "controller": "AuthController",
+    "handler": "register",
+    "public": true,
+    "roles": [],
+    "status": 201,
+    "inputs": [
+      {
+        "kind": 3,
+        "dto": "RegisterDto",
+        "fields": [
+          "cedula_dni",
+          "email",
+          "name",
+          "password"
+        ]
+      }
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/api/v1/observabilidad/eventos",
+    "controller": "TelemetryController",
+    "handler": "ingest",
+    "public": true,
+    "roles": [],
+    "status": 202,
+    "inputs": [
+      {
+        "kind": 3,
+        "dto": "BrowserBatchDto",
+        "fields": [
+          "events"
+        ]
+      }
+    ]
+  }
+]

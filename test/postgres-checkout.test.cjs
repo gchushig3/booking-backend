@@ -175,6 +175,17 @@ test('PostgreSQL checkout concurrency, cancellation, and payment failure', async
     assert.equal((await slotRepo.findOneByOrFail({ id: capacitySlot.id })).cuposReservados, 5);
     assert.equal(await reservationRepo.count({ where: { date: '2027-01-10', status: 'CONFIRMADA' } }), 5);
     assert.equal(await paymentRepo.count({ where: { reserva: { date: '2027-01-10' } } }), 5);
+    await t.test('PostgreSQL rejects invalid capacity, prices and a reservation without an attraction', async () => {
+      for (const [sql, values] of [
+        ['UPDATE disponibilidad_turnos SET cupos_reservados=capacidad_total+1 WHERE id=$1', [capacitySlot.id]],
+        ['UPDATE disponibilidad_turnos SET cupos_reservados=-1 WHERE id=$1', [capacitySlot.id]],
+        ['UPDATE disponibilidad_turnos SET capacidad_total=-1 WHERE id=$1', [capacitySlot.id]],
+        ['UPDATE paquetes_experiencias SET precio_unitario=-1 WHERE id=$1', [pkg.id]],
+        ['UPDATE pagos SET monto_pagado=-1 WHERE reserva_id=$1', [attempts.find(item => item.response.status === 201).data.reservation_id]],
+      ]) await assert.rejects(ds.query(sql, values), error => error.driverError?.code === '23514');
+      await assert.rejects(ds.query('UPDATE reservas_atracciones SET atraccion_id=NULL WHERE id=$1', [attempts.find(item => item.response.status === 201).data.reservation_id]), error => error.driverError?.code === '23502');
+      assert.equal((await slotRepo.findOneByOrFail({ id: capacitySlot.id })).cuposReservados, 5);
+    });
 
     const idempotencyKey = randomUUID();
     const firstCheckout = await reserve(idempotencyKey, request(1, [], '2027-01-14'));
@@ -186,6 +197,15 @@ test('PostgreSQL checkout concurrency, cancellation, and payment failure', async
     assert.equal(await reservationRepo.count({ where: { date: '2027-01-14' } }), 1);
     assert.equal(await paymentRepo.count({ where: { reserva: { date: '2027-01-14' } } }), 1);
     assert.equal((await slotRepo.findOneByOrFail({ atraccionId: attraction.id, fecha: '2027-01-14', horaInicio: '10:00' })).cuposReservados, 1);
+    await t.test('concurrent identical checkout keys persist one reservation, payment and capacity increment', async () => {
+      const key = randomUUID();
+      const results = await Promise.all(Array.from({ length: 6 }, () => reserve(key, request(1, [], '2027-03-01'))));
+      assert.ok(results.every(result => result.response.status === 201));
+      assert.equal(new Set(results.map(result => result.data.reservation_id)).size, 1);
+      assert.equal(await reservationRepo.count({ where: { idempotencyKey: key } }), 1);
+      assert.equal(await paymentRepo.count({ where: { reserva: { id: results[0].data.reservation_id } } }), 1);
+      assert.equal((await slotRepo.findOneByOrFail({ atraccionId: attraction.id, fecha: '2027-03-01', horaInicio: '10:00' })).cuposReservados, 1);
+    });
     const mismatchedRetry = await reserve(idempotencyKey, request(1, [], '2027-01-15'));
     assert.equal(mismatchedRetry.response.status, 409);
     assert.equal(mismatchedRetry.data.code, 'IDEMPOTENCY_KEY_REUSED');
@@ -208,6 +228,21 @@ test('PostgreSQL checkout concurrency, cancellation, and payment failure', async
     assert.equal((await reservationRepo.findOneByOrFail({ id: saved.id })).status, 'CANCELADA');
     const cancellationSlot = await slotRepo.findOneByOrFail({ atraccionId: attraction.id, fecha: '2027-01-11', horaInicio: '10:00' });
     assert.equal(cancellationSlot.cuposReservados, 0);
+    await t.test('concurrent cancellation releases capacity exactly once', async () => {
+      const created = await reserve(randomUUID(), request(2, [{ edad: 8 }], '2027-03-02'));
+      assert.equal(created.response.status, 201);
+      const responses = await Promise.all(Array.from({ length: 6 }, () => fetch(`${baseUrl}/atracciones/reservations/${created.data.reservation_id}/cancel`, {
+        method: 'POST', headers: { ...authHeaders, 'x-idempotency-key': randomUUID() }, body: JSON.stringify(cancelBody),
+      })));
+      assert.ok(responses.every(response => response.status === 200));
+      assert.equal((await reservationRepo.findOneByOrFail({ id: created.data.reservation_id })).status, 'CANCELADA');
+      assert.equal((await slotRepo.findOneByOrFail({ atraccionId: attraction.id, fecha: '2027-03-02', horaInicio: '10:00' })).cuposReservados, 0);
+    });
+    await t.test('PostgreSQL rejects orphan reservation owners and deleting a referenced owner', async () => {
+      await assert.rejects(ds.query('UPDATE reservas_atracciones SET "userId"=$1 WHERE id=$2', [randomUUID(), saved.id]), error => error.driverError?.code === '23503');
+      await assert.rejects(userRepo.delete(authData.user.id), error => error.driverError?.code === '23503');
+      assert.equal((await reservationRepo.findOneByOrFail({ id: saved.id })).userId, authData.user.id);
+    });
 
     const commentsUrl = `${baseUrl}/atracciones/${attraction.id}/comentarios`;
     const postComment = (reservationId, score = 5) => fetch(commentsUrl, { method: 'POST', headers: authHeaders,

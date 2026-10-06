@@ -5,7 +5,7 @@ export class SearchMetadataDto {
   @ApiProperty({ description: 'Total de resultados encontrados', example: 24 })
   total_results: number;
 
-  @ApiProperty({ description: 'Token de página siguiente; actualmente la búsqueda devuelve null.', nullable: true, example: null })
+  @ApiProperty({ type: String, description: 'Token de página siguiente; actualmente la búsqueda devuelve null.', nullable: true, example: null })
   next_page: string | null;
 }
 

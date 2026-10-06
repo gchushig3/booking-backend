@@ -1,750 +1,1226 @@
-# Define la versión del estándar OpenAPI que estamos utilizando.
-openapi: 3.0.3
-
-# Sección de metadatos de la API
-info:
-  # El nombre de la API que aparecerá en la documentación generada (Swagger)
-  title: API de Atracciones Turísticas
-  # Una descripción detallada de lo que hace este microservicio
-  description: |
-    Microservicio de Atracciones del Marketplace Turístico.
-    Gestiona el catálogo de tours (GUIDED_TOUR), paquetes (PACKAGE) y entradas individuales (SINGLE_TICKET),
-    la disponibilidad de cupos y el ciclo de vida transaccional completo de las reservas.
-    
-    Todos los endpoints transaccionales exigen la cabecera `Idempotency-Key` (UUID v4) para
-    garantizar operaciones idempotentes y evitar reservas o cancelaciones duplicadas.
-    Los errores siguen el estándar RFC 7807 (application/problem+json).
-  # Versión actual de la API
-  version: 1.2.0
-
-# Lista de servidores donde la API está alojada
-servers:
-  # URL del entorno local o API Gateway
-  - url: /api/v1
-    description: API Gateway - Ruta base
-
-# Categorías visuales para agrupar y organizar los endpoints en la documentación
-tags:
-  - name: Atracciones - Catálogo
-    description: Operaciones de lectura y escritura sobre el catálogo de tours y atracciones
-  - name: Atracciones - Reservas
-    description: Ciclo de vida transaccional de las reservas (crear, consultar, cancelar)
-
-# Aquí definimos todas las rutas (URLs) de nuestra API
+# Generado desde Swagger activo. Regenerar con npm run contract:export.
+openapi: 3.0.0
 paths:
-  
-  # Endpoint para buscar atracciones con filtros complejos
-  /atracciones/search:
-    # Método HTTP POST (Ideal para payloads de búsqueda grandes que exceden límites de URL en GET)
+  /api/v1/auth/register:
     post:
-      tags:
-        - Atracciones - Catálogo
-      summary: Búsqueda de atracciones
-      security:
-        - OAuth2Security:
-          - attractions:read
-      description: Endpoint para buscar atracciones en base a fechas, locaciones y filtros.
+      operationId: AuthController_register
+      summary: Registrar una cuenta CLIENTE
+      parameters: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SearchAtraccionesRequest'
-      responses:
-        '200':
-          description: Resultados de la búsqueda
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SearchAtraccionesResponse'
-        '400':
-          $ref: '#/components/responses/ProblemDetails400'
-  
-  # Endpoint masivo para recuperar datos estáticos y evitar N+1
-  /atracciones/details:
-    post:
-      tags:
-        - Atracciones - Catálogo
-      summary: Obtener detalles estáticos de múltiples atracciones (Batch)
-      security:
-        - OAuth2Security:
-          - attractions:read
-      description: Ideal para consultar múltiples IDs y evitar el problema N+1.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/DetailsRequest'
-      responses:
-        '200':
-          description: Detalles de atracciones en los idiomas solicitados.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SearchAtraccionesResponse'
-        '400':
-          $ref: '#/components/responses/ProblemDetails400'
-  /atracciones/health:
-    get:
-      tags:
-        - Atracciones - Catálogo
-      summary: Healthcheck del microservicio
-      responses:
-        '200':
-          description: Servicio de atracciones operativo
-  
-  # Endpoints sobre el recurso principal: Colección de Atracciones
-  /atracciones:
-    # Obtener listado con paginación tradicional (Útil para catálogos simples)
-    get:
-      tags:
-        - Atracciones - Catálogo
-      summary: Obtener el listado paginado de atracciones
-      security:
-        - OAuth2Security:
-          - attractions:read
-      parameters:
-        - name: limit
-          in: query
-          schema:
-            type: integer
-            default: 10
-        - name: offset
-          in: query
-          schema:
-            type: integer
-            default: 0
-      responses:
-        '200':
-          description: Listado de atracciones recuperado exitosamente.
-          headers:
-            X-API-Deprecation-Date:
-              schema:
-                type: string
-              description: Fecha en la que esta versión de la API será deprecada.
-            Cache-Control:
-              schema:
-                type: string
-              description: Directivas de caché.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedAtraccionResponse'
-    post:
-      tags:
-        - Atracciones - Catálogo
-      summary: Registrar una nueva atracción
-      security:
-        - OAuth2Security:
-          - attractions:write
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateAtraccionRequest'
+              $ref: '#/components/schemas/RegisterDto'
       responses:
         '201':
-          description: La atracción ha sido creada exitosamente.
+          description: Cuenta CLIENTE creada; devuelve JWT y datos públicos del usuario.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponseDto'
+        '400':
+          description: DTO inválido o cédula ecuatoriana inválida.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '409':
+          description: Email o cédula ya registrados.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '429':
+          description: >-
+            Rate limiting por IP: 100 solicitudes/minuto por defecto; ingesta 20
+            lotes/minuto y observabilidad ADMIN 60 solicitudes/minuto.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+      tags:
+        - Autenticación
+  /api/v1/auth/login:
+    post:
+      operationId: AuthController_login
+      summary: Iniciar sesión
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginDto'
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponseDto'
+        '400':
+          description: DTO inválido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '401':
+          description: Credenciales incorrectas.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '429':
+          description: >-
+            Rate limiting por IP: 100 solicitudes/minuto por defecto; ingesta 20
+            lotes/minuto y observabilidad ADMIN 60 solicitudes/minuto.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+      tags:
+        - Autenticación
+  /api/v1/observabilidad/eventos:
+    post:
+      operationId: TelemetryController_ingest
+      summary: Ingesta pública limitada de eventos de navegador
+      description: >-
+        Telemetría no verificada, sin identidad de usuario. Máximo 20 eventos, 2
+        KiB por payload, 48 KiB por batch y 20 batches/minuto por IP. No acepta
+        datos arbitrarios.
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BrowserBatchDto'
+      responses:
+        '202':
+          description: Batch persistido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TelemetryAcceptedDto'
+        '400':
+          description: DTO, categoría, tipo, tamaño o payload inválido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '429':
+          description: Límite de ingesta excedido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+      tags:
+        - Observabilidad
+  /api/v1/admin/observabilidad/stream:
+    get:
+      operationId: AdminTelemetryController_stream
+      summary: Stream SSE de snapshots persistidos; JWT ADMIN en Authorization
+      description: >-
+        Evento snapshot con JSON tras persistencia; reconciliacion cada 15
+        segundos. Reconectar cada 55 segundos para revalidar JWT. Sin tokens en
+        URL.
+      parameters: []
+      responses:
+        '200':
+          description: 'text/event-stream; event: snapshot; data: TelemetrySnapshotDto.'
+          content:
+            text/event-stream:
+              schema:
+                type: string
+        '401':
+          description: JWT ausente o inválido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '403':
+          description: Solo ADMIN.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '429':
+          description: >-
+            Rate limiting por IP: 100 solicitudes/minuto por defecto; ingesta 20
+            lotes/minuto y observabilidad ADMIN 60 solicitudes/minuto.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+      tags:
+        - Observabilidad ADMIN
+      security:
+        - JWT-auth: []
+  /api/v1/admin/observabilidad/eventos:
+    get:
+      operationId: AdminTelemetryController_recent
+      summary: Últimos 100 eventos de navegador persistidos y resumen de la muestra
+      parameters: []
+      responses:
+        '200':
+          description: Eventos sanitizados y métricas reales de la muestra.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TelemetrySnapshotDto'
+        '401':
+          description: JWT ausente o inválido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '403':
+          description: Solo ADMIN.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '429':
+          description: >-
+            Rate limiting por IP: 100 solicitudes/minuto por defecto; ingesta 20
+            lotes/minuto y observabilidad ADMIN 60 solicitudes/minuto.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+      tags:
+        - Observabilidad ADMIN
+      security:
+        - JWT-auth: []
+  /api/v1/admin/observabilidad/resumen:
+    get:
+      operationId: AdminTelemetryController_summary
+      summary: Resumen de los últimos 100 eventos de navegador
+      parameters: []
+      responses:
+        '200':
+          description: Conteos y promedio de carga si existen al menos dos navegaciones.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TelemetrySummaryDto'
+        '401':
+          description: JWT ausente o inválido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '403':
+          description: Solo ADMIN.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '429':
+          description: >-
+            Rate limiting por IP: 100 solicitudes/minuto por defecto; ingesta 20
+            lotes/minuto y observabilidad ADMIN 60 solicitudes/minuto.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+      tags:
+        - Observabilidad ADMIN
+      security:
+        - JWT-auth: []
+  /api/v1/atracciones/search:
+    post:
+      operationId: AtraccionesController_search
+      summary: Buscar atracciones
+      description: >-
+        Pública. Actualmente aplica product_type y rows; los demás campos del
+        DTO se aceptan pero no filtran, ordenan ni convierten moneda. next_page
+        devuelto es null.
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchAtraccionesDto'
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchAtraccionesResponseDto'
+        '400':
+          description: DTO de búsqueda inválido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '429':
+          description: >-
+            Rate limiting por IP: 100 solicitudes/minuto por defecto; ingesta 20
+            lotes/minuto y observabilidad ADMIN 60 solicitudes/minuto.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+      tags:
+        - Atracciones
+  /api/v1/atracciones/details:
+    post:
+      operationId: AtraccionesController_getDetailsBatch
+      summary: Obtener detalles batch de atracciones
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DetailsRequestDto'
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchAtraccionesResponseDto'
+        '400':
+          description: DTO de detalles inválido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '429':
+          description: >-
+            Rate limiting por IP: 100 solicitudes/minuto por defecto; ingesta 20
+            lotes/minuto y observabilidad ADMIN 60 solicitudes/minuto.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+      tags:
+        - Atracciones
+  /api/v1/atracciones:
+    post:
+      operationId: AtraccionesController_create
+      summary: Crear atracción
+      description: Requiere Bearer JWT y rol ADMIN.
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAtraccionDto'
+      responses:
+        '201':
+          description: Atracción creada; incluye cabecera Location.
           headers:
             Location:
+              description: Ruta del recurso creado.
               schema:
                 type: string
+                example: /api/v1/atracciones/{id}
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AtraccionResponse'
+                $ref: '#/components/schemas/AtraccionResponseDto'
         '400':
-          $ref: '#/components/responses/ProblemDetails400'
-  /atracciones/{id}:
+          description: DTO inválido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '401':
+          description: JWT ausente o inválido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '403':
+          description: Se requiere rol ADMIN.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '429':
+          description: >-
+            Rate limiting por IP: 100 solicitudes/minuto por defecto; ingesta 20
+            lotes/minuto y observabilidad ADMIN 60 solicitudes/minuto.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+      tags:
+        - Atracciones
+      security:
+        - JWT-auth: []
     get:
-      tags:
-        - Atracciones - Catálogo
-      summary: Obtener el detalle de una atracción
-      security:
-        - OAuth2Security:
-          - attractions:read
-      summary: Obtener el detalle de una atracción
+      operationId: AtraccionesController_findAll
+      summary: Listar atracciones paginadas
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: Detalle de la atracción.
-          headers:
-            X-API-Deprecation-Date:
-              schema:
-                type: string
-              description: Fecha en la que esta versión de la API será deprecada.
-            Cache-Control:
-              schema:
-                type: string
-              description: Directivas de caché.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AtraccionResponse'
-        '404':
-          $ref: '#/components/responses/ProblemDetails404'
-    put:
-      tags:
-        - Atracciones - Catálogo
-      summary: Reemplazar datos completos de una atracción
-      security:
-        - OAuth2Security:
-          - attractions:write
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateAtraccionRequest'
-      responses:
-        '204':
-          description: Reemplazo exitoso sin contenido de respuesta.
-        '400':
-          $ref: '#/components/responses/ProblemDetails400'
-    patch:
-      tags:
-        - Atracciones - Catálogo
-      summary: Actualizar parcialmente una atracción
-      security:
-        - OAuth2Security:
-          - attractions:write
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateAtraccionRequest'
-      responses:
-        '200':
-          description: Actualización exitosa.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AtraccionResponse'
-        '400':
-          $ref: '#/components/responses/ProblemDetails400'
-    delete:
-      tags:
-        - Atracciones - Catálogo
-      summary: Eliminar una atracción
-      security:
-        - OAuth2Security:
-          - attractions:write
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '204':
-          description: Eliminación exitosa sin contenido.
-        '404':
-          $ref: '#/components/responses/ProblemDetails404'
-  
-  # Consultar disponibilidad de fechas o franjas horarias
-  /atracciones/{id}/availability:
-    get:
-      tags:
-        - Atracciones - Catálogo
-      summary: Consultar disponibilidad de cupos
-      security:
-        - OAuth2Security:
-          - attractions:read
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-        - name: date
+        - name: page
+          required: false
           in: query
-          required: true
+          description: Página actual
           schema:
+            minimum: 1
+            default: 1
+            type: integer
+        - name: limit
+          required: false
+          in: query
+          description: Elementos por página
+          schema:
+            minimum: 1
+            default: 100
+            type: integer
+        - name: product_type
+          required: false
+          in: query
+          description: Tipo de producto
+          schema:
+            enum:
+              - SINGLE_TICKET
+              - GUIDED_TOUR
+              - PACKAGE
             type: string
-            format: date
       responses:
         '200':
-          description: Disponibilidad recuperada exitosamente.
+          description: ''
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AvailabilityResponse'
-        '404':
-          $ref: '#/components/responses/ProblemDetails404'
-  
-  # Endpoint transaccional de creación de orden/reserva
-  /atracciones/{id}/reservations:
-    post:
-      tags:
-        - Atracciones - Reservas
-      summary: Crear una reserva de la atracción
-      # Requiere autenticación y el scope de escritura
-      security:
-        - OAuth2Security:
-          - attractions:book
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-        # Previene que un fallo de red resulte en compras dobles
-        - name: Idempotency-Key
-          in: header
-          required: true
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ReservationRequest'
-      responses:
-        '201':
-          description: Reserva confirmada
+                $ref: '#/components/schemas/AtraccionesListResponseDto'
+        '400':
+          description: Parámetros de paginación o modalidad inválidos.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ReservationResponse'
-        '400':
-          $ref: '#/components/responses/ProblemDetails400'
-        '404':
-          $ref: '#/components/responses/ProblemDetails404'
-        '409':
-          $ref: '#/components/responses/ProblemDetails409'
-  /atracciones/reservations/{reservationId}/cancel:
-    post:
-      tags:
-        - Atracciones - Reservas
-      summary: Cancelar una reserva
-      security:
-        - OAuth2Security:
-          - attractions:cancel
-      parameters:
-        - name: reservationId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-        - name: Idempotency-Key
-          in: header
-          required: true
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CancelReservationRequest'
-      responses:
-        '200':
-          description: Cancelación procesada
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '429':
+          description: >-
+            Rate limiting por IP: 100 solicitudes/minuto por defecto; ingesta 20
+            lotes/minuto y observabilidad ADMIN 60 solicitudes/minuto.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ReservationResponse'
-        '400':
-          $ref: '#/components/responses/ProblemDetails400'
-        '404':
-          $ref: '#/components/responses/ProblemDetails404'
-        '409':
-          $ref: '#/components/responses/ProblemDetails409'
-  /atracciones/{id}:
-    put:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
       tags:
-        - Atracciones - Catálogo
-      summary: Reemplazar datos de una atracción
-      security:
-        - OAuth2Security:
-          - attractions:write
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateAtraccionRequest'
-      responses:
-        '204':
-          description: Reemplazo exitoso
-        '400':
-          $ref: '#/components/responses/ProblemDetails400'
-        '404':
-          $ref: '#/components/responses/ProblemDetails404'
-    patch:
-      tags:
-        - Atracciones - Catálogo
-      summary: Actualizar parcialmente una atracción
-      security:
-        - OAuth2Security:
-          - attractions:write
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateAtraccionRequest'
-      responses:
-        '200':
-          description: Actualización exitosa
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AtraccionResponse'
-        '400':
-          $ref: '#/components/responses/ProblemDetails400'
-        '404':
-          $ref: '#/components/responses/ProblemDetails404'
-    delete:
-      tags:
-        - Atracciones - Catálogo
-      summary: Eliminar una atracción
-      security:
-        - OAuth2Security:
-          - attractions:write
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '204':
-          description: Eliminación exitosa
-        '404':
-          $ref: '#/components/responses/ProblemDetails404'
-  /atracciones/reservations:
+        - Atracciones
+  /api/v1/atracciones/health:
     get:
-      tags:
-        - Atracciones - Reservas
-      summary: Historial de reservas del usuario
-      security:
-        - OAuth2Security:
-          - attractions:read
+      operationId: AtraccionesController_checkHealth
+      summary: Consultar estado del servicio de atracciones
+      parameters: []
       responses:
         '200':
-          description: Listado de reservas
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - status
+                  - timestamp
+                properties:
+                  status:
+                    type: string
+                    enum:
+                      - UP
+                  timestamp:
+                    type: string
+                    format: date-time
+                example:
+                  status: UP
+                  timestamp: '2026-10-05T12:00:00.000Z'
+        '429':
+          description: >-
+            Rate limiting por IP: 100 solicitudes/minuto por defecto; ingesta 20
+            lotes/minuto y observabilidad ADMIN 60 solicitudes/minuto.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+      tags:
+        - Atracciones
+  /api/v1/atracciones/{id}/paquetes:
+    get:
+      operationId: AtraccionesController_getPackages
+      summary: Listar paquetes, modalidades, precios y políticas de una atracción
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: UUID de la atracción.
+          schema:
+            format: uuid
+            type: string
+      responses:
+        '200':
+          description: ''
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/ReservationResponse'
-  /atracciones/reservations/{reservationId}:
-    get:
+                  $ref: '#/components/schemas/PaqueteExperienciaResponseDto'
+        '400':
+          description: El id no es un UUID válido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '404':
+          description: Atracción no encontrada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '429':
+          description: >-
+            Rate limiting por IP: 100 solicitudes/minuto por defecto; ingesta 20
+            lotes/minuto y observabilidad ADMIN 60 solicitudes/minuto.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
       tags:
-        - Atracciones - Reservas
-      summary: Obtener detalle de una reserva
+        - Atracciones
+  /api/v1/atracciones/reservations:
+    get:
+      operationId: AtraccionesController_getReservations
+      summary: Listar mis reservas
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ReservationResponseDto'
+        '401':
+          description: JWT ausente o inválido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '429':
+          description: >-
+            Rate limiting por IP: 100 solicitudes/minuto por defecto; ingesta 20
+            lotes/minuto y observabilidad ADMIN 60 solicitudes/minuto.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+      tags:
+        - Atracciones
       security:
-        - OAuth2Security:
-          - attractions:read
+        - JWT-auth: []
+  /api/v1/atracciones/reservations/{reservationId}:
+    get:
+      operationId: AtraccionesController_getReservationById
+      summary: Consultar detalle de una reserva propia
       parameters:
         - name: reservationId
+          required: true
           in: path
+          schema:
+            format: uuid
+            type: string
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservationResponseDto'
+        '400':
+          description: El id no es un UUID válido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '401':
+          description: JWT ausente o inválido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '403':
+          description: La reserva pertenece a otro usuario.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '404':
+          description: Reserva no encontrada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '429':
+          description: >-
+            Rate limiting por IP: 100 solicitudes/minuto por defecto; ingesta 20
+            lotes/minuto y observabilidad ADMIN 60 solicitudes/minuto.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+      tags:
+        - Atracciones
+      security:
+        - JWT-auth: []
+  /api/v1/atracciones/{id}:
+    get:
+      operationId: AtraccionesController_getAttraction
+      summary: Consultar detalle de una atracción
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            format: uuid
+            type: string
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AtraccionResponseDto'
+        '400':
+          description: El id no es un UUID válido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '404':
+          description: Atracción no encontrada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '429':
+          description: >-
+            Rate limiting por IP: 100 solicitudes/minuto por defecto; ingesta 20
+            lotes/minuto y observabilidad ADMIN 60 solicitudes/minuto.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+      tags:
+        - Atracciones
+    put:
+      operationId: AtraccionesController_replace
+      summary: Reemplazar una atracción
+      description: Requiere Bearer JWT y rol ADMIN.
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            format: uuid
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAtraccionDto'
+      responses:
+        '204':
+          description: Reemplazo completado sin cuerpo.
+        '400':
+          description: UUID o DTO inválido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '401':
+          description: JWT ausente o inválido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '403':
+          description: Se requiere rol ADMIN.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '404':
+          description: Atracción no encontrada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '429':
+          description: >-
+            Rate limiting por IP: 100 solicitudes/minuto por defecto; ingesta 20
+            lotes/minuto y observabilidad ADMIN 60 solicitudes/minuto.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+      tags:
+        - Atracciones
+      security:
+        - JWT-auth: []
+    patch:
+      operationId: AtraccionesController_update
+      summary: Actualizar parcialmente una atracción
+      description: Requiere Bearer JWT y rol ADMIN.
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            format: uuid
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAtraccionDto'
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AtraccionResponseDto'
+        '400':
+          description: UUID o DTO inválido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '401':
+          description: JWT ausente o inválido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '403':
+          description: Se requiere rol ADMIN.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '404':
+          description: Atracción no encontrada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '429':
+          description: >-
+            Rate limiting por IP: 100 solicitudes/minuto por defecto; ingesta 20
+            lotes/minuto y observabilidad ADMIN 60 solicitudes/minuto.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+      tags:
+        - Atracciones
+      security:
+        - JWT-auth: []
+    delete:
+      operationId: AtraccionesController_remove
+      summary: Desactivar una atracción (soft delete)
+      description: Requiere Bearer JWT y rol ADMIN.
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            format: uuid
+            type: string
+      responses:
+        '204':
+          description: Atracción desactivada sin cuerpo.
+        '400':
+          description: El id no es un UUID válido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '401':
+          description: JWT ausente o inválido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '403':
+          description: Se requiere rol ADMIN.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '404':
+          description: Atracción no encontrada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '429':
+          description: >-
+            Rate limiting por IP: 100 solicitudes/minuto por defecto; ingesta 20
+            lotes/minuto y observabilidad ADMIN 60 solicitudes/minuto.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+      tags:
+        - Atracciones
+      security:
+        - JWT-auth: []
+  /api/v1/atracciones/{id}/availability:
+    get:
+      operationId: AtraccionesController_getAvailability
+      summary: Consultar disponibilidad para una fecha y turno
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            format: uuid
+            type: string
+        - name: date
+          required: true
+          in: query
+          description: Fecha en formato YYYY-MM-DD.
+          schema:
+            example: '2026-10-10'
+            type: string
+        - name: product_type
+          required: false
+          in: query
+          schema:
+            enum:
+              - SINGLE_TICKET
+              - GUIDED_TOUR
+              - PACKAGE
+            type: string
+        - name: time
+          required: false
+          in: query
+          description: Si se envía, available_spots corresponde a este turno.
+          schema:
+            example: '10:00'
+            type: string
+      responses:
+        '200':
+          description: Devuelve date, available_spots, times y los filtros enviados.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvailabilityResponseDto'
+        '400':
+          description: Fecha faltante/incorrecta o modalidad inválida.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '404':
+          description: Atracción no encontrada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '429':
+          description: >-
+            Rate limiting por IP: 100 solicitudes/minuto por defecto; ingesta 20
+            lotes/minuto y observabilidad ADMIN 60 solicitudes/minuto.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+      tags:
+        - Atracciones
+  /api/v1/atracciones/{id}/reservations:
+    post:
+      operationId: AtraccionesController_reserve
+      summary: Checkout y creación de reserva
+      description: >-
+        Requiere JWT. Misma key + mismo payload normalizado + mismo propietario
+        devuelve la reserva y pago originales, sin duplicarlos. Misma key con
+        payload incompatible, otra atracción o propietario: 409
+        IDEMPOTENCY_KEY_REUSED. paquete_id determina modalidad, precio y
+        políticas en el servidor; pago mediante proveedor mock.
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: UUID de la atracción.
+          schema:
+            format: uuid
+            type: string
+        - name: X-Idempotency-Key
+          in: header
+          description: UUID v4 obligatorio y estable para reintentos de la misma operación.
           required: true
           schema:
             type: string
             format: uuid
+            pattern: >-
+              ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReservationRequestDto'
       responses:
-        '200':
-          description: Detalle de reserva
+        '201':
+          description: Reserva confirmada y pago mock procesado.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ReservationResponse'
+                $ref: '#/components/schemas/ReservationResponseDto'
+        '400':
+          description: >-
+            DTO/header invalido, paquete de otra atraccion o product_type
+            diferente del paquete seleccionado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '401':
+          description: JWT ausente o inválido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
         '404':
-          $ref: '#/components/responses/ProblemDetails404'
-
-# Componentes reutilizables. Aquí definimos moldes para no repetir código.
+          description: Atraccion o paquete_id no encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '409':
+          description: >-
+            409 INSUFFICIENT_AVAILABILITY, PAYMENT_FAILED o
+            IDEMPOTENCY_KEY_REUSED si la key tiene otro payload/propietario.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '429':
+          description: >-
+            Rate limiting por IP: 100 solicitudes/minuto por defecto; ingesta 20
+            lotes/minuto y observabilidad ADMIN 60 solicitudes/minuto.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+      tags:
+        - Atracciones
+      security:
+        - JWT-auth: []
+  /api/v1/atracciones/reservations/{reservationId}/cancel:
+    post:
+      operationId: AtraccionesController_cancelReservation
+      summary: Cancelar una reserva propia
+      description: >-
+        Requiere JWT y propiedad de la reserva, o rol ADMIN. Cancelar una
+        reserva ya CANCELADA devuelve su estado sin liberar cupos de nuevo. Se
+        exige UUID v4, pero no se persiste una key/fingerprint independiente de
+        cancelación: una key nueva actúa sobre reservationId. Si la key
+        corresponde a un checkout de otra reserva devuelve 400; no se compara
+        reason para idempotencia.
+      parameters:
+        - name: reservationId
+          required: true
+          in: path
+          schema:
+            format: uuid
+            type: string
+        - name: X-Idempotency-Key
+          in: header
+          description: >-
+            UUID v4 obligatorio. Repetir la cancelación de la misma reserva no
+            vuelve a liberar cupos; ver la semántica real en la descripción de
+            la operación.
+          required: true
+          schema:
+            type: string
+            format: uuid
+            pattern: >-
+              ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelReservationRequestDto'
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservationResponseDto'
+        '400':
+          description: >-
+            DTO inválido, reason insuficiente, header ausente/inválido o key de
+            un checkout de otra reserva.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '401':
+          description: JWT ausente o inválido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '403':
+          description: La reserva pertenece a otro usuario.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '404':
+          description: Reserva no encontrada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '409':
+          description: >-
+            El turno no tiene una reserva de cupos consistente; no se liberaron
+            cupos.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '429':
+          description: >-
+            Rate limiting por IP: 100 solicitudes/minuto por defecto; ingesta 20
+            lotes/minuto y observabilidad ADMIN 60 solicitudes/minuto.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+      tags:
+        - Atracciones
+      security:
+        - JWT-auth: []
+  /api/v1/admin/reservas:
+    get:
+      operationId: AdminReservasController_list
+      summary: Consultar todas las reservas
+      description: Requiere Bearer JWT y rol ADMIN.
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ReservationResponseDto'
+        '401':
+          description: JWT ausente o inválido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '403':
+          description: Se requiere rol ADMIN.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '429':
+          description: >-
+            Rate limiting por IP: 100 solicitudes/minuto por defecto; ingesta 20
+            lotes/minuto y observabilidad ADMIN 60 solicitudes/minuto.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+      tags:
+        - Administración
+      security:
+        - JWT-auth: []
+  /api/v1/atracciones/{id}/comentarios:
+    post:
+      operationId: ComentariosController_create
+      summary: Comentar una atracción
+      description: >-
+        Requiere JWT y una reserva CONFIRMADA propia para la atracción. Cada
+        reserva admite un comentario.
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: UUID de la atracción.
+          schema:
+            format: uuid
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateComentarioDto'
+      responses:
+        '201':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComentarioResponseDto'
+        '400':
+          description: Puntuación fuera de 1..5 o cuerpo inválido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '401':
+          description: JWT ausente o inválido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '403':
+          description: Se requiere una reserva CONFIRMADA propia para esta atracción.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '404':
+          description: Atracción no encontrada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '409':
+          description: La reserva ya tiene un comentario.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '429':
+          description: >-
+            Rate limiting por IP: 100 solicitudes/minuto por defecto; ingesta 20
+            lotes/minuto y observabilidad ADMIN 60 solicitudes/minuto.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+      tags:
+        - Comentarios
+      security:
+        - JWT-auth: []
+    get:
+      operationId: ComentariosController_list
+      summary: Listar comentarios de una atracción
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            format: uuid
+            type: string
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ComentarioResponseDto'
+        '400':
+          description: El id no es un UUID válido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '401':
+          description: JWT ausente o inválido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '404':
+          description: Atracción no encontrada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+        '429':
+          description: >-
+            Rate limiting por IP: 100 solicitudes/minuto por defecto; ingesta 20
+            lotes/minuto y observabilidad ADMIN 60 solicitudes/minuto.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseDto'
+      tags:
+        - Comentarios
+      security:
+        - JWT-auth: []
+info:
+  title: Booking Prototipo API
+  description: >-
+    APIs activas de autenticación, atracciones, reservas, comentarios, ADMIN y
+    observabilidad. Errores: 400 (validación), 401 (JWT), 403 (rol o propiedad),
+    404 (recurso), 409 (conflicto) y 429 (rate limiting). Las rutas
+    administrativas requieren Bearer JWT y rol ADMIN. Solo se incluyen módulos
+    montados; la cancelación y el checkout tienen semánticas de idempotencia
+    distintas, descritas en cada operación.
+  version: '1.0'
+  contact: {}
+tags: []
+servers: []
 components:
-  
-  # Moldes de Seguridad
   securitySchemes:
-    # Definimos cómo funciona el OAuth2 para atracciones
-    OAuth2Security:
-      type: oauth2
-      flows:
-        authorizationCode:
-          authorizationUrl: https://auth.booking-hub.com/oauth2/authorize
-          tokenUrl: https://auth.booking-hub.com/oauth2/token
-          scopes:
-            attractions:read: Leer catálogo y detalles
-            attractions:book: Hacer reservas
-            attractions:write: Crear y mantener inventario
-            attractions:webhooks: Gestionar webhooks
-  
-  # Moldes de Respuestas de Error estandarizadas
-  responses:
-    ProblemDetails400:
-      description: Petición inválida
-      content:
-        application/problem+json:
-          schema:
-            $ref: '#/components/schemas/ProblemDetails'
-    ProblemDetails404:
-      description: No encontrado
-      content:
-        application/problem+json:
-          schema:
-            $ref: '#/components/schemas/ProblemDetails'
-    ProblemDetails409:
-      description: Conflicto o error de idempotencia
-      content:
-        application/problem+json:
-          schema:
-            $ref: '#/components/schemas/ProblemDetails'
-  
-  # Moldes de Datos (Schemas). Definimos los JSON exactos que viajan en las peticiones.
+    JWT-auth:
+      scheme: bearer
+      bearerFormat: JWT
+      type: http
+      in: header
   schemas:
-    # Esquema estándar para reportar errores detallados (RFC 7807)
-    ProblemDetails:
+    RegisterDto:
       type: object
+      properties:
+        name:
+          type: string
+          example: Ana Pérez
+          minLength: 2
+          maxLength: 120
+        email:
+          type: string
+          example: ana@example.com
+          maxLength: 255
+        password:
+          type: string
+          writeOnly: true
+          minLength: 8
+          maxLength: 72
+          description: El backend almacena únicamente un hash.
+        cedula_dni:
+          type: string
+          example: '1710034065'
+          minLength: 10
+          maxLength: 10
+          description: Cédula ecuatoriana válida. El registro asigna el rol CLIENTE.
       required:
-        - type
-        - title
-        - status
-      properties:
-        type:
-          type: string
-        title:
-          type: string
-        status:
-          type: integer
-        detail:
-          type: string
-        instance:
-          type: string
-    Price:
-      type: object
-      properties:
-        currency:
-          type: string
-          example: USD
-        total:
-          type: number
-          example: 45.0
-    Coordinates:
-      type: object
-      properties:
-        latitude:
-          type: number
-          format: float
-        longitude:
-          type: number
-          format: float
-    Location:
-      type: object
-      properties:
-        address:
-          type: string
-        city:
-          type: integer
-        country:
-          type: string
-        coordinates:
-          $ref: '#/components/schemas/Coordinates'
-        type:
-          type: string
-    Photo:
-      type: object
-      properties:
-        url:
-          type: string
-          format: uri
-    Operator:
-      type: object
-      properties:
-        id:
-          type: integer
-          example: 123
-        name:
-          type: string
-          example: "Quito Tour Bus"
-    Rating:
-      type: object
-      properties:
-        number_of_reviews:
-          type: integer
-        score:
-          type: number
-          format: float
-    Url:
-      type: object
-      properties:
-        web:
-          type: string
-          format: uri
-        app:
-          type: string
-          format: uri
-    DetailsRequest:
-      type: object
-      properties:
-        attractions:
-          type: array
-          items:
-            type: string
-        languages:
-          type: array
-          items:
-            type: string
-    SearchAtraccionesRequest:
-      type: object
-      properties:
-        currency:
-          type: string
-          example: EUR
-        cities:
-          type: array
-          items:
-            type: integer
-        countries:
-          type: array
-          items:
-            type: string
-        dates:
-          type: object
-          properties:
-            start_date:
-              type: string
-              format: date
-            end_date:
-              type: string
-              format: date
-        filters:
-          type: object
-          properties:
-            rating:
-              type: object
-              properties:
-                minimum_review_score:
-                  type: number
-                  format: float
-                minimum_review_count:
-                  type: integer
-        next_page:
-          type: string
-          description: Token opaco de paginación
-        rows:
-          type: integer
-          example: 20
-        sort:
-          type: object
-          properties:
-            by:
-              type: string
-              example: most_popular
-    SearchAtraccionesResponse:
-      type: object
-      properties:
-        data:
-          type: array
-          items:
-            $ref: '#/components/schemas/AtraccionResponse'
-        metadata:
-          type: object
-          properties:
-            total_results:
-              type: integer
-            next_page:
-              type: string
-              description: Token opaco para obtener la siguiente página
-        request_id:
-          type: string
-    CreateAtraccionRequest:
-      type: object
-      properties:
-        name:
-          type: string
-        long_description:
-          type: string
-        duration:
-          type: string
-        price:
-          $ref: '#/components/schemas/Price'
-        categories:
-          type: array
-          items:
-            type: string
-        badges:
-          type: array
-          items:
-            type: string
-        locations:
-          type: array
-          items:
-            $ref: '#/components/schemas/Location'
-        photos:
-          type: array
-          items:
-            $ref: '#/components/schemas/Photo'
-        operator:
-          $ref: '#/components/schemas/Operator'
-        product_type:
-          type: string
-          enum:
-            - SINGLE_TICKET
-            - GUIDED_TOUR
-            - PACKAGE
-        includes:
-          type: array
-          items:
-            type: string
-        supported_languages:
-          type: array
-          items:
-            type: string
-        free_cancellation:
-          type: boolean
-    UpdateAtraccionRequest:
-      type: object
-      description: Update atraccion request
-    AtraccionResponse:
+        - name
+        - email
+        - password
+        - cedula_dni
+    AuthenticatedUserResponseDto:
       type: object
       properties:
         id:
@@ -752,121 +1228,1215 @@ components:
           format: uuid
         name:
           type: string
+          example: Ana Pérez
+        email:
+          type: string
+          example: ana@example.com
+      required:
+        - id
+        - name
+        - email
+    AuthResponseDto:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          description: JWT de acceso; duración configurada por el backend.
+        user:
+          $ref: '#/components/schemas/AuthenticatedUserResponseDto'
+      required:
+        - accessToken
+        - user
+    LoginDto:
+      type: object
+      properties:
+        email:
+          type: string
+          example: ana@example.com
+          maxLength: 255
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+          maxLength: 72
+      required:
+        - email
+        - password
+    BrowserEventDto:
+      type: object
+      properties:
+        category:
+          type: string
+          enum:
+            - PERFORMANCE
+            - ERROR
+            - RESOURCE_ERROR
+            - INTERACTION
+            - VISIBILITY
+            - VIEWPORT
+            - CONNECTION
+            - CAPABILITY
+            - HTTP
+            - DOMAIN
+        type:
+          type: string
+          description: Tipo permitido para la categoría.
+          maxLength: 50
+        timestamp:
+          type: string
+          format: date-time
+        route:
+          type: string
+          maxLength: 200
+        sessionId:
+          type: string
+          format: uuid
+          description: Identificador aleatorio en memoria, sin identidad de usuario.
+        payload:
+          type: object
+          description: Solo campos técnicos permitidos; plano, máximo 2 KiB.
+      required:
+        - category
+        - type
+        - timestamp
+        - route
+        - sessionId
+        - payload
+    BrowserBatchDto:
+      type: object
+      properties:
+        events:
+          minItems: 1
+          maxItems: 20
+          type: array
+          items:
+            $ref: '#/components/schemas/BrowserEventDto'
+      required:
+        - events
+    TelemetryAcceptedDto:
+      type: object
+      properties:
+        accepted:
+          type: number
+          example: 3
+      required:
+        - accepted
+    PersistedBrowserEventDto:
+      type: object
+      properties:
+        category:
+          type: string
+          enum:
+            - PERFORMANCE
+            - ERROR
+            - RESOURCE_ERROR
+            - INTERACTION
+            - VISIBILITY
+            - VIEWPORT
+            - CONNECTION
+            - CAPABILITY
+            - HTTP
+            - DOMAIN
+        type:
+          type: string
+          description: Tipo permitido para la categoría.
+          maxLength: 50
+        timestamp:
+          type: string
+          format: date-time
+        route:
+          type: string
+          maxLength: 200
+        sessionId:
+          type: string
+          format: uuid
+          description: Identificador aleatorio en memoria, sin identidad de usuario.
+        payload:
+          type: object
+          description: Solo campos técnicos permitidos; plano, máximo 2 KiB.
+        id:
+          type: string
+          format: uuid
+        receivedAt:
+          type: string
+          format: date-time
+          description: Fecha del servidor; timestamp es reportado por el navegador.
+      required:
+        - category
+        - type
+        - timestamp
+        - route
+        - sessionId
+        - payload
+        - id
+        - receivedAt
+    TelemetrySummaryDto:
+      type: object
+      properties:
+        sampleSize:
+          type: number
+        sampleLimit:
+          type: number
+          example: 100
+        counts:
+          type: object
+          additionalProperties:
+            type: number
+          description: Conteos de eventos por categoría dentro de la muestra.
+        navigationSamples:
+          type: number
+        averageLoadMs:
+          type: number
+          nullable: true
+          description: Media de loadMs; null si hay menos de dos navegaciones completas.
+      required:
+        - sampleSize
+        - sampleLimit
+        - counts
+        - navigationSamples
+        - averageLoadMs
+    TelemetrySnapshotDto:
+      type: object
+      properties:
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/PersistedBrowserEventDto'
+        summary:
+          $ref: '#/components/schemas/TelemetrySummaryDto'
+        generatedAt:
+          type: string
+          format: date-time
+      required:
+        - events
+        - summary
+        - generatedAt
+    DatesFilterDto:
+      type: object
+      properties:
+        start_date:
+          description: Fecha de inicio ISO 8601; acepta fecha o timestamp.
+          oneOf:
+            - type: string
+              format: date
+            - type: string
+              format: date-time
+          example: '2026-10-10'
+        end_date:
+          description: Fecha de fin ISO 8601; acepta fecha o timestamp.
+          oneOf:
+            - type: string
+              format: date
+            - type: string
+              format: date-time
+          example: '2026-10-12'
+      required:
+        - start_date
+        - end_date
+    RatingFilterDto:
+      type: object
+      properties:
+        minimum_review_score:
+          type: number
+          description: Puntuación mínima
+          example: 4.2
+        minimum_review_count:
+          type: number
+          description: Cantidad mínima de reseñas
+          example: 100
+    FiltersDto:
+      type: object
+      properties:
+        rating:
+          description: Filtros de calificación
+          allOf:
+            - $ref: '#/components/schemas/RatingFilterDto'
+    SortDto:
+      type: object
+      properties:
+        by:
+          type: string
+          description: Criterio de ordenamiento
+          example: most_popular
+      required:
+        - by
+    SearchAtraccionesDto:
+      type: object
+      properties:
+        currency:
+          type: string
+          description: Moneda solicitada
+          example: EUR
+        cities:
+          type: array
+          description: >-
+            IDs de ciudades. Actualmente no filtran la consulta; solo
+            product_type se aplica.
+          items:
+            type: integer
+          example:
+            - -2140479
+        countries:
+          description: Códigos de países ISO
+          example:
+            - nl
+          type: array
+          items:
+            type: string
+        dates:
+          description: Rango de fechas
+          allOf:
+            - $ref: '#/components/schemas/DatesFilterDto'
+        filters:
+          description: Filtros adicionales
+          allOf:
+            - $ref: '#/components/schemas/FiltersDto'
+        next_page:
+          type: string
+          description: Token opaco de paginación
+          example: eyJwYWdlIjoyfQ==
+        rows:
+          type: integer
+          description: Cantidad de filas a retornar
+          example: 20
+        sort:
+          description: Ordenamiento
+          allOf:
+            - $ref: '#/components/schemas/SortDto'
+        product_type:
+          type: string
+          description: Filtra por tipo de producto
+          enum:
+            - SINGLE_TICKET
+            - GUIDED_TOUR
+            - PACKAGE
+          example: SINGLE_TICKET
+      required:
+        - currency
+        - cities
+        - countries
+        - dates
+        - rows
+        - sort
+    PriceDto:
+      type: object
+      properties:
+        currency:
+          type: string
+          description: Código de moneda IATA
+          example: USD
+        total:
+          type: number
+          description: Monto total
+          example: 45
+      required:
+        - currency
+        - total
+    PackagePricesDto:
+      type: object
+      properties:
+        SINGLE_TICKET:
+          $ref: '#/components/schemas/PriceDto'
+        GUIDED_TOUR:
+          $ref: '#/components/schemas/PriceDto'
+        PACKAGE:
+          $ref: '#/components/schemas/PriceDto'
+    OperatorDto:
+      type: object
+      properties:
+        id:
+          type: number
+          description: ID de la empresa/proveedor
+          example: 123
+        name:
+          type: string
+          description: Nombre de la empresa operadora
+          example: Quito Tour Bus
+      required:
+        - id
+        - name
+    RatingDto:
+      type: object
+      properties:
+        number_of_reviews:
+          type: number
+          description: Número de reseñas
+          example: 3250
+        score:
+          type: number
+          description: Puntuación promedio
+          example: 4.8
+      required:
+        - number_of_reviews
+        - score
+    UrlDto:
+      type: object
+      properties:
+        web:
+          type: string
+          description: URL web
+          example: >-
+            https://www.booking.com/attractions/nl/prahazwttraa-heineken-experience-amsterdam.en-gb.html
+        app:
+          type: string
+          description: URL para App (Deep Link)
+          example: booking://attractions/product?slug=prahazwttraa
+      required:
+        - web
+    AtraccionResponseDto:
+      type: object
+      properties:
+        _links:
+          type: object
+          description: HATEOAS links para navegación
+          additionalProperties:
+            type: string
+            format: uri
+          example:
+            self:
+              href: /api/v1/atracciones/123e4567-e89b-12d3-a456-426614174000
+              method: GET
+            actualizar:
+              href: /api/v1/atracciones/123e4567-e89b-12d3-a456-426614174000
+              method: PATCH
+            eliminar:
+              href: /api/v1/atracciones/123e4567-e89b-12d3-a456-426614174000
+              method: DELETE
+        id:
+          type: string
+          description: UUID único de la atracción
+          format: uuid
+          example: 123e4567-e89b-12d3-a456-426614174000
+        name:
+          type: string
+          description: Nombre de la atracción
+          example: Heineken Experience Amsterdam
+        provincia:
+          type: string
+          example: Pichincha
+        region:
+          type: string
+          example: Sierra
+        categoria:
+          type: string
+          example: Museos y cultura
+        precioBase:
+          type: number
+          description: Precio base para la atracción
+          example: 25
+        cuposTotales:
+          type: number
+          example: 25
+        horariosDisponibles:
+          example:
+            - '08:00'
+            - '10:00'
+            - '14:00'
+          type: array
+          items:
+            type: string
+        tipoExperienciaPermitidos:
+          type: array
+          items:
+            type: string
+            enum:
+              - SINGLE_TICKET
+              - GUIDED_TOUR
+              - PACKAGE
         long_description:
           type: string
+          description: Descripción detallada
+          example: Discover the history of Heineken...
         duration:
           type: string
+          description: Duración (Formato ISO 8601)
+          example: PT2H
         price:
-          $ref: '#/components/schemas/Price'
+          description: Precio de la atracción
+          allOf:
+            - $ref: '#/components/schemas/PriceDto'
+        package_prices:
+          description: Precios específicos por modalidad
+          allOf:
+            - $ref: '#/components/schemas/PackagePricesDto'
+        operator:
+          description: Empresa Operadora
+          allOf:
+            - $ref: '#/components/schemas/OperatorDto'
+        product_type:
+          type: string
+          description: Tipo de producto
+          enum:
+            - SINGLE_TICKET
+            - GUIDED_TOUR
+            - PACKAGE
+          example: GUIDED_TOUR
+        includes:
+          description: Qué incluye el paquete o tour
+          example:
+            - Transporte
+            - Guía
+          type: array
+          items:
+            type: string
         categories:
+          description: Categorías de la atracción
+          example:
+            - food_drinks
           type: array
           items:
             type: string
         badges:
+          description: Insignias comerciales
+          example:
+            - best_seller
           type: array
           items:
             type: string
         locations:
           type: array
+          description: Ubicaciones asociadas a la atracción
           items:
-            $ref: '#/components/schemas/Location'
+            type: object
+            additionalProperties: true
         photos:
           type: array
+          description: Fotos de la atracción
           items:
-            $ref: '#/components/schemas/Photo'
+            type: object
+            additionalProperties: true
+        supported_languages:
+          description: Idiomas soportados
+          example:
+            - en-gb
+            - nl
+          type: array
+          items:
+            type: string
+        free_cancellation:
+          type: boolean
+          description: Tiene cancelación gratuita
+          example: true
+        ratings:
+          description: Puntuaciones y reseñas
+          allOf:
+            - $ref: '#/components/schemas/RatingDto'
+        url:
+          description: Enlaces directos a la plataforma
+          allOf:
+            - $ref: '#/components/schemas/UrlDto'
+      required:
+        - id
+        - name
+        - provincia
+        - region
+        - categoria
+        - precioBase
+        - cuposTotales
+        - horariosDisponibles
+        - tipoExperienciaPermitidos
+        - long_description
+        - duration
+        - price
+        - operator
+        - product_type
+        - includes
+        - categories
+        - badges
+        - locations
+        - photos
+        - supported_languages
+        - free_cancellation
+    SearchMetadataDto:
+      type: object
+      properties:
+        total_results:
+          type: number
+          description: Total de resultados encontrados
+          example: 24
+        next_page:
+          type: string
+          description: Token de página siguiente; actualmente la búsqueda devuelve null.
+          nullable: true
+          example: null
+      required:
+        - total_results
+        - next_page
+    SearchAtraccionesResponseDto:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AtraccionResponseDto'
+        metadata:
+          $ref: '#/components/schemas/SearchMetadataDto'
+        request_id:
+          type: string
+          example: req-1720000000000
+      required:
+        - data
+        - metadata
+        - request_id
+    DetailsRequestDto:
+      type: object
+      properties:
+        attractions:
+          description: >-
+            IDs de atracciones almacenadas como UUID; el DTO valida strings, no
+            el formato UUID.
+          example:
+            - 8f45c29f-744d-4308-b2fa-b5d2222c7ab7
+          type: array
+          items:
+            type: string
+        languages:
+          description: Idiomas solicitados
+          example:
+            - en-gb
+          type: array
+          items:
+            type: string
+        product_type:
+          type: string
+          description: Filtra por tipo de producto
+          enum:
+            - SINGLE_TICKET
+            - GUIDED_TOUR
+            - PACKAGE
+          example: GUIDED_TOUR
+      required:
+        - attractions
+    BatchAtraccionesResponseDto:
+      type: object
+      properties:
+        request_id:
+          type: string
+          example: batch-1720000000000
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AtraccionResponseDto'
+      required:
+        - request_id
+        - data
+    CoordinatesDto:
+      type: object
+      properties:
+        latitude:
+          type: number
+          description: Latitud
+          example: -0.680556
+        longitude:
+          type: number
+          description: Longitud
+          example: -78.437778
+      required:
+        - latitude
+        - longitude
+    LocationDto:
+      type: object
+      properties:
+        address:
+          type: string
+          description: Dirección física
+          example: Stadhouderskade 78
+        city:
+          type: number
+          description: ID numérico de la ciudad
+          example: -2140479
+        country:
+          type: string
+          description: Código ISO de país
+          example: ec
+        coordinates:
+          description: Coordenadas
+          allOf:
+            - $ref: '#/components/schemas/CoordinatesDto'
+        type:
+          type: string
+          description: Tipo de locación
+          example: attraction
+      required:
+        - address
+        - city
+        - country
+        - coordinates
+    PhotoDto:
+      type: object
+      properties:
+        url:
+          type: string
+          description: URL de la foto
+          example: https://cf.bstatic.com/xdata/images/xphoto/500x375/170335205.jpg
+      required:
+        - url
+    CreateAtraccionDto:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Nombre de la atracción turística
+          example: Tour al Parque Nacional Cotopaxi
+        long_description:
+          type: string
+          description: Descripción detallada de la atracción
+          example: >-
+            Excursión guiada al volcán Cotopaxi, incluye caminata hasta el
+            refugio.
+        duration:
+          type: string
+          description: Duración en formato ISO 8601
+          example: PT8H
+        price:
+          description: Precio de la atracción
+          allOf:
+            - $ref: '#/components/schemas/PriceDto'
+        package_prices:
+          description: >-
+            Precios por modalidad; si se omite una modalidad se calcula desde el
+            precio base
+          allOf:
+            - $ref: '#/components/schemas/PackagePricesDto'
         operator:
-          $ref: '#/components/schemas/Operator'
+          description: Empresa operadora del tour
+          allOf:
+            - $ref: '#/components/schemas/OperatorDto'
+        product_type:
+          type: string
+          description: Tipo de producto
+          enum:
+            - SINGLE_TICKET
+            - GUIDED_TOUR
+            - PACKAGE
+          example: GUIDED_TOUR
+        includes:
+          description: Qué incluye el tour/paquete
+          example:
+            - Transporte
+            - Guía Bilingüe
+            - Almuerzo
+          type: array
+          items:
+            type: string
+        categories:
+          description: Categorías de la atracción
+          example:
+            - tour_guiado
+            - cultural
+          type: array
+          items:
+            type: string
+        badges:
+          description: Insignias comerciales
+          example:
+            - best_seller
+          type: array
+          items:
+            type: string
+        locations:
+          description: Ubicaciones del tour
+          type: array
+          items:
+            $ref: '#/components/schemas/LocationDto'
+        photos:
+          description: Fotos de la atracción
+          type: array
+          items:
+            $ref: '#/components/schemas/PhotoDto'
+        supported_languages:
+          description: Idiomas soportados
+          example:
+            - es
+            - en
+          type: array
+          items:
+            type: string
+        free_cancellation:
+          type: boolean
+          description: Permite cancelación gratuita
+          example: true
+      required:
+        - name
+        - long_description
+        - duration
+        - product_type
+        - includes
+        - categories
+        - locations
+        - photos
+        - supported_languages
+        - free_cancellation
+    AtraccionesListMetaDto:
+      type: object
+      properties:
+        total:
+          type: number
+          example: 24
+        page:
+          type: number
+          example: 1
+        lastPage:
+          type: number
+          example: 3
+      required:
+        - total
+        - page
+        - lastPage
+    AtraccionesListResponseDto:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AtraccionResponseDto'
+        meta:
+          $ref: '#/components/schemas/AtraccionesListMetaDto'
+      required:
+        - data
+        - meta
+    PaqueteExperienciaResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        atraccion_id:
+          type: string
+          format: uuid
+        tipo_experiencia:
+          type: string
+          enum:
+            - SINGLE_TICKET
+            - GUIDED_TOUR
+            - PACKAGE
+        nombre_paquete:
+          type: string
+          example: Experiencia GUIDED_TOUR
+        descripcion:
+          type: string
+          nullable: true
+        precio_unitario:
+          type: number
+          minimum: 0
+          example: 35.5
+        moneda:
+          type: string
+          example: USD
+        min_participantes:
+          type: integer
+          minimum: 1
+        max_participantes:
+          type: integer
+          minimum: 1
+          nullable: true
+        politicas_json:
+          type: object
+          additionalProperties: true
+      required:
+        - id
+        - atraccion_id
+        - tipo_experiencia
+        - nombre_paquete
+        - descripcion
+        - precio_unitario
+        - moneda
+        - min_participantes
+        - max_participantes
+        - politicas_json
+    ReservationPaymentResponseDto:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - SUCCESS
+          example: SUCCESS
+        metodo_pago:
+          type: string
+          enum:
+            - CREDIT_CARD
+            - PAYPAL
+        monto_pagado:
+          type: number
+          example: 60
+        transaccion_hash:
+          type: string
+          description: Referencia de transacción mock.
+        fecha_pago:
+          format: date-time
+          type: string
+      required:
+        - status
+        - metodo_pago
+        - monto_pagado
+        - transaccion_hash
+        - fecha_pago
+    ReservationAttractionResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        image_url:
+          type: string
+          format: url
+      required:
+        - id
+        - name
+    ReservationResponseDto:
+      type: object
+      properties:
+        reservation_id:
+          type: string
+          description: ID único de reserva.
+          format: uuid
+        status:
+          type: string
+          description: Estado persistido de la reserva.
+          enum:
+            - PENDIENTE
+            - CONFIRMADA
+            - CANCELADA
+          example: CONFIRMADA
+        ticket_count:
+          type: number
+          example: 2
+        num_adultos:
+          type: number
+          example: 2
+        num_ninos:
+          type: number
+          example: 1
+        total_cupos_ocupados:
+          type: number
+          example: 3
         product_type:
           type: string
           enum:
             - SINGLE_TICKET
             - GUIDED_TOUR
             - PACKAGE
-        includes:
+        total_price:
+          $ref: '#/components/schemas/PriceDto'
+        payment:
+          description: >-
+            Presente en la respuesta del checkout; no contiene datos sensibles
+            de tarjeta.
+          allOf:
+            - $ref: '#/components/schemas/ReservationPaymentResponseDto'
+        date:
+          type: string
+          example: '2026-10-10'
+          format: date
+        time:
+          type: string
+          example: '10:00'
+        attraction:
+          $ref: '#/components/schemas/ReservationAttractionResponseDto'
+      required:
+        - reservation_id
+        - status
+        - ticket_count
+        - num_adultos
+        - num_ninos
+        - total_cupos_ocupados
+        - product_type
+        - total_price
+        - date
+        - attraction
+    AvailabilityResponseDto:
+      type: object
+      properties:
+        date:
+          type: string
+          description: Fecha de disponibilidad
+          example: '2026-10-10'
+          format: date
+        available_spots:
+          type: number
+          description: >-
+            Cupos disponibles para el turno indicado; si se omite hora, máximo
+            disponible entre turnos.
+          example: 12
+          minimum: 0
+        times:
+          description: Horarios con al menos un cupo disponible para la fecha.
+          example:
+            - '10:00'
+            - '14:00'
           type: array
           items:
             type: string
+        product_type:
+          type: string
+          description: Modalidad consultada.
+          enum:
+            - SINGLE_TICKET
+            - GUIDED_TOUR
+            - PACKAGE
+          example: GUIDED_TOUR
+        time:
+          type: string
+          description: >-
+            Turno consultado; si se omite, available_spots es el máximo de los
+            horarios.
+          example: '10:00'
+      required:
+        - date
+        - available_spots
+        - times
+    ChildDto:
+      type: object
+      properties:
+        edad:
+          type: integer
+          description: Edad individual del niño; rango 0 a 17 años.
+          example: 8
+          minimum: 0
+          maximum: 17
+      required:
+        - edad
+    ReservationRequestDto:
+      type: object
+      properties:
+        paquete_id:
+          type: string
+          description: >-
+            UUID del paquete seleccionado. Determina modalidad, precio, limites
+            y politicas desde PostgreSQL.
+          format: uuid
+        date:
+          type: string
+          description: Fecha de la reserva.
+          example: '2026-10-10'
+          format: date
+        time:
+          type: string
+          description: Hora de inicio del turno seleccionado.
+          example: '10:00'
+        ticket_count:
+          type: integer
+          description: >-
+            Compatibilidad; se interpreta como número de adultos cuando
+            num_adultos no se envía.
+          example: 2
+          minimum: 1
+        num_adultos:
+          type: integer
+          description: Número de adultos.
+          example: 2
+          minimum: 0
+        ninos:
+          description: >-
+            Niños participantes. El backend calcula precio y cupos a partir de
+            sus edades y política del paquete.
+          type: array
+          items:
+            $ref: '#/components/schemas/ChildDto'
+        metodo_pago:
+          type: string
+          description: Método del proveedor mock.
+          enum:
+            - CREDIT_CARD
+            - PAYPAL
+        titular_tarjeta:
+          type: string
+          description: Titular; no se procesa ni almacena PAN o CVV.
+          maxLength: 150
+        ultimos_cuatro_digitos:
+          type: string
+          description: Solo los últimos cuatro dígitos. Nunca enviar PAN completo ni CVV.
+          example: '4242'
+          pattern: ^\d{4}$
+        product_type:
+          type: string
+          description: >-
+            Compatibilidad: si se envia, debe coincidir con tipo_experiencia del
+            paquete_id. El servidor deriva la modalidad del paquete.
+          enum:
+            - SINGLE_TICKET
+            - GUIDED_TOUR
+            - PACKAGE
+        customer_name:
+          type: string
+          description: Nombre completo del cliente.
+          example: Juan Perez
+        customer_email:
+          type: string
+          example: juan@example.com
+      required:
+        - paquete_id
+        - date
+        - customer_name
+    CancelReservationRequestDto:
+      type: object
+      properties:
+        reason:
+          type: string
+          description: >-
+            Razón de la cancelación; el servicio exige al menos 3 caracteres
+            tras trim. No se almacena ni forma parte de un fingerprint de
+            cancelación.
+          minLength: 3
+          example: Plan cancelado
+      required:
+        - reason
+    UpdateAtraccionDto:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Nombre de la atracción turística
+          example: Tour al Parque Nacional Cotopaxi
+        long_description:
+          type: string
+          description: Descripción detallada de la atracción
+          example: >-
+            Excursión guiada al volcán Cotopaxi, incluye caminata hasta el
+            refugio.
+        duration:
+          type: string
+          description: Duración en formato ISO 8601
+          example: PT8H
+        price:
+          description: Precio de la atracción
+          allOf:
+            - $ref: '#/components/schemas/PriceDto'
+        package_prices:
+          description: >-
+            Precios por modalidad; si se omite una modalidad se calcula desde el
+            precio base
+          allOf:
+            - $ref: '#/components/schemas/PackagePricesDto'
+        operator:
+          description: Empresa operadora del tour
+          allOf:
+            - $ref: '#/components/schemas/OperatorDto'
+        product_type:
+          type: string
+          description: Tipo de producto
+          enum:
+            - SINGLE_TICKET
+            - GUIDED_TOUR
+            - PACKAGE
+          example: GUIDED_TOUR
+        includes:
+          description: Qué incluye el tour/paquete
+          example:
+            - Transporte
+            - Guía Bilingüe
+            - Almuerzo
+          type: array
+          items:
+            type: string
+        categories:
+          description: Categorías de la atracción
+          example:
+            - tour_guiado
+            - cultural
+          type: array
+          items:
+            type: string
+        badges:
+          description: Insignias comerciales
+          example:
+            - best_seller
+          type: array
+          items:
+            type: string
+        locations:
+          description: Ubicaciones del tour
+          type: array
+          items:
+            $ref: '#/components/schemas/LocationDto'
+        photos:
+          description: Fotos de la atracción
+          type: array
+          items:
+            $ref: '#/components/schemas/PhotoDto'
         supported_languages:
+          description: Idiomas soportados
+          example:
+            - es
+            - en
           type: array
           items:
             type: string
         free_cancellation:
           type: boolean
-        ratings:
-          $ref: '#/components/schemas/Rating'
-        url:
-          $ref: '#/components/schemas/Url'
-        _links:
-          type: object
-    PaginatedAtraccionResponse:
-      type: object
-      properties:
-        data:
-          type: array
-          items:
-            $ref: '#/components/schemas/AtraccionResponse'
-        meta:
-          type: object
-          properties:
-            totalItems:
-              type: integer
-            itemCount:
-              type: integer
-            itemsPerPage:
-              type: integer
-            totalPages:
-              type: integer
-            currentPage:
-              type: integer
-    AvailabilityResponse:
-      type: object
-      properties:
-        date:
-          type: string
-          format: date
-        available_spots:
-          type: integer
-        times:
-          type: array
-          items:
-            type: string
-    ReservationRequest:
-      type: object
-      required:
-        - date
-        - ticket_count
-        - customer_name
-      properties:
-        date:
-          type: string
-          format: date
-        time:
-          type: string
-        ticket_count:
-          type: integer
-        customer_name:
-          type: string
-        customer_email:
-          type: string
-    ReservationResponse:
+          description: Permite cancelación gratuita
+          example: true
+    CreateComentarioDto:
       type: object
       properties:
         reservation_id:
           type: string
           format: uuid
-        status:
-          type: string
-          enum: [CONFIRMED, PENDING, CANCELLED]
-        ticket_count:
+        puntuacion:
           type: integer
-        total_price:
-          $ref: '#/components/schemas/Price'
-    CancelReservationRequest:
-      type: object
-      required:
-        - reason
-      properties:
-        reason:
+          minimum: 1
+          maximum: 5
+          example: 5
+        comentario:
           type: string
-          description: Razón de la cancelación
-
+          minLength: 3
+          maxLength: 3000
+      required:
+        - reservation_id
+        - puntuacion
+        - comentario
+    ComentarioResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        atraccion_id:
+          type: string
+          format: uuid
+        reserva_id:
+          type: string
+          format: uuid
+          nullable: true
+        puntuacion:
+          type: integer
+          minimum: 1
+          maximum: 5
+        comentario:
+          type: string
+        fecha_creacion:
+          format: date-time
+          type: string
+      required:
+        - id
+        - atraccion_id
+        - reserva_id
+        - puntuacion
+        - comentario
+        - fecha_creacion
+    ApiErrorResponseDto:
+      type: object
+      properties:
+        message:
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                type: string
+          description: Mensaje del error; array cuando falla ValidationPipe.
+        statusCode:
+          type: integer
+          description: Presente en las excepciones HTTP estándar de Nest.
+        error:
+          type: string
+          description: Nombre del error HTTP estándar.
+        code:
+          type: string
+          description: >-
+            Código de dominio cuando la implementación lo proporciona; p. ej.
+            IDEMPOTENCY_KEY_REUSED.
+      required:
+        - message

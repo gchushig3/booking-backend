@@ -1,0 +1,47 @@
+▶ ADMIN attraction CRUD and reservations remain operational in PostgreSQL
+  ✔ ADMIN creates and lists a persisted attraction (103.7084ms)
+  ✔ CLIENTE cannot create, edit, replace or deactivate attractions (20.1072ms)
+  ✔ ADMIN updates then deactivates without deleting the row (51.6685ms)
+  ✔ ADMIN lists reservations and CLIENTE receives 403 (18.6064ms)
+✔ ADMIN attraction CRUD and reservations remain operational in PostgreSQL (517.7356ms)
+▶ PostgreSQL browser telemetry ingestion, ADMIN authorization and SSE
+  ✔ valid public DTO is accepted and persisted without a user identity (85.5971ms)
+  ✔ invalid categories and types are rejected (12.7262ms)
+  ✔ oversized payload and batch are rejected (8.7274ms)
+  ✔ nested payloads and private fields are rejected instead of stored (12.8993ms)
+  ✔ ADMIN reads recent events and real summary (23.7903ms)
+  ✔ CLIENTE is rejected with 403 and missing JWT with 401 (13.4359ms)
+  ✔ subsequent ADMIN reads receive newly persisted events for polling (20.3524ms)
+  ✔ error messages and URLs are sanitized at the server boundary (17.6558ms)
+  ✔ authenticated SSE delivers newly persisted events and disconnects cleanly (226.8417ms)
+  ✔ redacts sensitive path segments and complete quoted secrets before persistence (12.7838ms)
+  ✔ rate limits ingestion (53.5521ms)
+✔ PostgreSQL browser telemetry ingestion, ADMIN authorization and SSE (808.0965ms)
+▶ PostgreSQL checkout concurrency, cancellation, and payment failure
+  ✔ reserves A and B of the same modality with exact package IDs, prices and child policies (77.7254ms)
+  ✔ uses the selected package minimum and maximum (99.7019ms)
+  ✔ same key and package replays the result, changing only paquete_id conflicts (45.4416ms)
+  ✔ rejects a missing or malformed package UUID and a nonexistent package (9.235ms)
+  ✔ rejects a package from another attraction without persisting a reservation (16.1144ms)
+  ✔ optional compatibility modality must match the package (30.1667ms)
+  ✔ rejects frontend prices, limits and policies as checkout inputs (12.7331ms)
+  ✔ PostgreSQL rejects invalid capacity, prices and a reservation without an attraction (10.2163ms)
+  ✔ concurrent identical checkout keys persist one reservation, payment and capacity increment (68.7452ms)
+  ✔ concurrent cancellation releases capacity exactly once (88.2075ms)
+  ✔ PostgreSQL rejects orphan reservation owners and deleting a referenced owner (6.427ms)
+✔ PostgreSQL checkout concurrency, cancellation, and payment failure (1692.3816ms)
+✔ participant limits are enforced for GUIDED_TOUR and PACKAGE (1.1469ms)
+✔ participant count must be an integer (0.2154ms)
+✔ Ecuadorian identity number uses province, third digit, and module 10 checks (0.3316ms)
+✔ pricing covers adults, free children, paid children, mixed ages, and the exact age threshold (0.5592ms)
+✔ pricing rejects missing participants, invalid ages, invalid prices, and malformed policies (0.7958ms)
+OpenAPI smoke passed: 24 active operations documented.
+✔ OpenAPI documents every active attraction REST operation (379.2315ms)
+ℹ tests 35
+ℹ suites 0
+ℹ pass 35
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2977.7403

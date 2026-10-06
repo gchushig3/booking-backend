@@ -4,11 +4,11 @@ import { Type } from 'class-transformer';
 import { ProductType } from './create-atraccion.dto';
 
 export class DatesFilterDto {
-  @ApiProperty({ description: 'Fecha de inicio', example: '2025-12-18' })
+  @ApiProperty({ description: 'Fecha de inicio ISO 8601; acepta fecha o timestamp.', oneOf: [{ type: 'string', format: 'date' }, { type: 'string', format: 'date-time' }], example: '2026-10-10' })
   @IsDateString()
   start_date: string;
 
-  @ApiProperty({ description: 'Fecha de fin', example: '2025-12-20' })
+  @ApiProperty({ description: 'Fecha de fin ISO 8601; acepta fecha o timestamp.', oneOf: [{ type: 'string', format: 'date' }, { type: 'string', format: 'date-time' }], example: '2026-10-12' })
   @IsDateString()
   end_date: string;
 }
@@ -44,7 +44,7 @@ export class SearchAtraccionesDto {
   @IsString()
   currency: string;
 
-  @ApiProperty({ description: 'IDs de ciudades', example: [-2140479] })
+  @ApiProperty({ description: 'IDs de ciudades. Actualmente no filtran la consulta; solo product_type se aplica.', type: 'array', items: { type: 'integer' }, example: [-2140479] })
   @IsArray()
   @IsInt({ each: true })
   cities: number[];
@@ -70,7 +70,7 @@ export class SearchAtraccionesDto {
   @IsOptional()
   next_page?: string;
 
-  @ApiProperty({ description: 'Cantidad de filas a retornar', example: 20 })
+  @ApiProperty({ description: 'Cantidad de filas a retornar', type: 'integer', example: 20 })
   @IsInt()
   rows: number;
 

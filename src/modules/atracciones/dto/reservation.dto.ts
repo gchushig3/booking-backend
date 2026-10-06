@@ -18,13 +18,13 @@ export class ReservationRequestDto {
   @IsOptional()
   time?: string;
 
-  @ApiPropertyOptional({ description: 'Compatibilidad; se interpreta como número de adultos cuando num_adultos no se envía.', example: 2, minimum: 1 })
+  @ApiPropertyOptional({ type: 'integer', description: 'Compatibilidad; se interpreta como número de adultos cuando num_adultos no se envía.', example: 2, minimum: 1 })
   @IsOptional()
   @IsInt()
   @Min(1)
   ticket_count?: number;
 
-  @ApiPropertyOptional({ description: 'Número de adultos.', example: 2, minimum: 0 })
+  @ApiPropertyOptional({ type: 'integer', description: 'Número de adultos.', example: 2, minimum: 0 })
   @IsOptional() @IsInt() @Min(0)
   num_adultos?: number;
 
@@ -95,13 +95,13 @@ export class ReservationResponseDto {
 }
 
 export class ChildDto {
-  @ApiProperty({ description: 'Edad individual del niño; rango 0 a 17 años.', example: 8, minimum: 0, maximum: 17 })
+  @ApiProperty({ type: 'integer', description: 'Edad individual del niño; rango 0 a 17 años.', example: 8, minimum: 0, maximum: 17 })
   @IsInt() @Min(0) @Max(17)
   edad: number;
 }
 
 export class CancelReservationRequestDto {
-  @ApiProperty({ description: 'Razón de la cancelación.', example: 'Plan cancelado' })
+  @ApiProperty({ description: 'Razón de la cancelación; el servicio exige al menos 3 caracteres tras trim. No se almacena ni forma parte de un fingerprint de cancelación.', minLength: 3, example: 'Plan cancelado' })
   @IsString()
   reason: string;
 }

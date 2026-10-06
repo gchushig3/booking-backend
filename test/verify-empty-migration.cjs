@@ -2,6 +2,7 @@ require('dotenv').config();
 const { Client } = require('pg');
 const { spawnSync } = require('node:child_process');
 const { randomUUID } = require('node:crypto');
+const { readdirSync, writeFileSync } = require('node:fs');
 
 async function main() {
   if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL must point to a PostgreSQL account allowed to create a temporary database.');
@@ -43,6 +44,19 @@ async function main() {
     if (!relations.includes('(paquete_id, atraccion_id)') || !relations.includes('(turno_id, atraccion_id)')) {
       throw new Error('Fresh migration omitted the reservation package/attraction/slot composite foreign keys.');
     }
+    if (!foreignKeys.rows.some(row => row.conname === 'fk_reserva_user' && row.definition.includes('REFERENCES users(id)'))) {
+      throw new Error('Fresh migration omitted the reservation owner foreign key.');
+    }
+    const audit = spawnSync(process.execPath, ['test/audit-database.cjs'], {
+      cwd: process.cwd(), env: { ...process.env, DATABASE_URL: testUrl.toString(), DB_AUDIT_OUTPUT: 'contracts/evidence/database-fresh-audit.json' }, encoding: 'utf8',
+    });
+    if (audit.status !== 0) throw new Error(audit.stderr + audit.stdout);
+    const tests = spawnSync(process.execPath, ['--test', ...readdirSync('test').filter(name => name.endsWith('.test.cjs')).map(name => `test/${name}`)], {
+      cwd: process.cwd(), env: { ...process.env, DATABASE_URL: testUrl.toString() }, encoding: 'utf8',
+    });
+    writeFileSync('contracts/evidence/database-fresh-tests.txt', tests.stdout + tests.stderr);
+    if (tests.status !== 0) throw new Error(tests.stderr + tests.stdout);
+    process.stdout.write('All backend tests passed on the freshly migrated PostgreSQL database.\n');
     process.stdout.write(`Fresh PostgreSQL migration succeeded (${temporaryDatabase}).\n`);
   } finally {
     await admin.query(`DROP DATABASE IF EXISTS "${temporaryDatabase}" WITH (FORCE)`);

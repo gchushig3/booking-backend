@@ -37,7 +37,7 @@ export class Reserva {
   @Column({ name: 'num_ninos', type: 'int', default: 0 })
   numNinos: number;
 
-  @Column({ name: 'total_cupos_ocupados', type: 'int', default: 1 })
+  @Column({ name: 'total_cupos_ocupados', type: 'int', default: 0 })
   totalCuposOcupados: number;
 
   @Column({ name: 'edades_ninos', type: 'jsonb', default: () => "'[]'::jsonb" })
@@ -67,7 +67,7 @@ export class Reserva {
   @Column({ type: 'enum', enum: ['PENDIENTE', 'CONFIRMADA', 'CANCELADA'], enumName: 'booking_reservation_status_enum', default: 'CONFIRMADA' })
   status: 'PENDIENTE' | 'CONFIRMADA' | 'CANCELADA';
 
-  @ManyToOne(() => Atraccion, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Atraccion, { onDelete: 'CASCADE', nullable: false })
   @JoinColumn({ name: 'atraccion_id' })
   atraccion: Atraccion;
 
