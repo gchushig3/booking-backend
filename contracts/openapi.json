@@ -546,6 +546,15 @@
         "summary": "Listar atracciones paginadas",
         "parameters": [
           {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "description": "Buscar por nombre",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "page",
             "required": false,
             "in": "query",
@@ -672,6 +681,111 @@
       }
     },
     "/api/v1/atracciones/{id}/paquetes": {
+      "post": {
+        "operationId": "AtraccionesController_savePackage",
+        "summary": "Crear experiencia reservable",
+        "description": "Requiere rol ADMIN.",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveExperienceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "UUID o datos inválidos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "JWT ausente o inválido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Se requiere rol ADMIN.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Atracción o experiencia no encontrada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limiting por IP: 100 solicitudes/minuto por defecto; ingesta 20 lotes/minuto y observabilidad ADMIN 60 solicitudes/minuto.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Atracciones"
+        ],
+        "security": [
+          {
+            "JWT-auth": []
+          }
+        ]
+      },
       "get": {
         "operationId": "AtraccionesController_getPackages",
         "summary": "Listar paquetes, modalidades, precios y políticas de una atracción",
@@ -703,6 +817,350 @@
           },
           "400": {
             "description": "El id no es un UUID válido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Atracción no encontrada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limiting por IP: 100 solicitudes/minuto por defecto; ingesta 20 lotes/minuto y observabilidad ADMIN 60 solicitudes/minuto.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Atracciones"
+        ]
+      }
+    },
+    "/api/v1/atracciones/{id}/paquetes/{packageId}": {
+      "put": {
+        "operationId": "AtraccionesController_updatePackage",
+        "summary": "Editar experiencia reservable",
+        "description": "Requiere rol ADMIN. Las reservas existentes conservan sus importes.",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "packageId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveExperienceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "UUID o datos inválidos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "JWT ausente o inválido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Se requiere rol ADMIN.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Atracción o experiencia no encontrada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limiting por IP: 100 solicitudes/minuto por defecto; ingesta 20 lotes/minuto y observabilidad ADMIN 60 solicitudes/minuto.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Atracciones"
+        ],
+        "security": [
+          {
+            "JWT-auth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/atracciones/{id}/availability": {
+      "put": {
+        "operationId": "AtraccionesController_saveSlot",
+        "summary": "Configurar capacidad de un turno",
+        "description": "Requiere rol ADMIN. No permite reducir la capacidad por debajo de los cupos reservados.",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveSlotDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "atraccionId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "fecha": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "horaInicio": {
+                      "type": "string"
+                    },
+                    "capacidadTotal": {
+                      "type": "integer"
+                    },
+                    "cuposReservados": {
+                      "type": "integer"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "UUID o datos inválidos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "JWT ausente o inválido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Se requiere rol ADMIN.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Atracción o experiencia no encontrada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "La capacidad es menor que los cupos reservados.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limiting por IP: 100 solicitudes/minuto por defecto; ingesta 20 lotes/minuto y observabilidad ADMIN 60 solicitudes/minuto.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Atracciones"
+        ],
+        "security": [
+          {
+            "JWT-auth": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "AtraccionesController_getAvailability",
+        "summary": "Consultar disponibilidad para una fecha y turno",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "date",
+            "required": true,
+            "in": "query",
+            "description": "Fecha en formato YYYY-MM-DD.",
+            "schema": {
+              "example": "2026-10-10",
+              "type": "string"
+            }
+          },
+          {
+            "name": "product_type",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "SINGLE_TICKET",
+                "GUIDED_TOUR",
+                "PACKAGE"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "time",
+            "required": false,
+            "in": "query",
+            "description": "Si se envía, available_spots corresponde a este turno.",
+            "schema": {
+              "example": "10:00",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Devuelve date, available_spots, times y los filtros enviados.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AvailabilityResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Fecha faltante/incorrecta o modalidad inválida.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1197,101 +1655,6 @@
           {
             "JWT-auth": []
           }
-        ]
-      }
-    },
-    "/api/v1/atracciones/{id}/availability": {
-      "get": {
-        "operationId": "AtraccionesController_getAvailability",
-        "summary": "Consultar disponibilidad para una fecha y turno",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          },
-          {
-            "name": "date",
-            "required": true,
-            "in": "query",
-            "description": "Fecha en formato YYYY-MM-DD.",
-            "schema": {
-              "example": "2026-10-10",
-              "type": "string"
-            }
-          },
-          {
-            "name": "product_type",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "enum": [
-                "SINGLE_TICKET",
-                "GUIDED_TOUR",
-                "PACKAGE"
-              ],
-              "type": "string"
-            }
-          },
-          {
-            "name": "time",
-            "required": false,
-            "in": "query",
-            "description": "Si se envía, available_spots corresponde a este turno.",
-            "schema": {
-              "example": "10:00",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Devuelve date, available_spots, times y los filtros enviados.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AvailabilityResponseDto"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Fecha faltante/incorrecta o modalidad inválida.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiErrorResponseDto"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Atracción no encontrada.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiErrorResponseDto"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Rate limiting por IP: 100 solicitudes/minuto por defecto; ingesta 20 lotes/minuto y observabilidad ADMIN 60 solicitudes/minuto.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiErrorResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "Atracciones"
         ]
       }
     },
@@ -2895,6 +3258,57 @@
         "required": [
           "data",
           "meta"
+        ]
+      },
+      "SaveExperienceDto": {
+        "type": "object",
+        "properties": {
+          "nombre_paquete": {
+            "type": "string"
+          },
+          "tipo_experiencia": {
+            "type": "string",
+            "enum": [
+              "SINGLE_TICKET",
+              "GUIDED_TOUR",
+              "PACKAGE"
+            ]
+          },
+          "precio_unitario": {
+            "type": "number"
+          },
+          "min_participantes": {
+            "type": "number"
+          },
+          "max_participantes": {
+            "type": "number",
+            "nullable": true
+          }
+        },
+        "required": [
+          "nombre_paquete",
+          "tipo_experiencia",
+          "precio_unitario",
+          "min_participantes"
+        ]
+      },
+      "SaveSlotDto": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string"
+          },
+          "time": {
+            "type": "string"
+          },
+          "capacidad_total": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "date",
+          "time",
+          "capacidad_total"
         ]
       },
       "PaqueteExperienciaResponseDto": {

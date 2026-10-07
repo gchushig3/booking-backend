@@ -1,3 +1,4 @@
+import { SaveExperienceDto, SaveSlotDto } from './dto/booking-settings.dto';
 import { BadRequestException, Body, Controller, Delete, Get, Header, HttpCode, HttpStatus, Param, ParseUUIDPipe, Patch, Post, Put, Query, Req, Res, UseGuards } from '@nestjs/common';
 import { Response } from 'express';
 import {
@@ -79,6 +80,50 @@ export class AtraccionesController {
   @ApiOperation({ summary: 'Consultar estado del servicio de atracciones' })
   @ApiOkResponse({ schema: { type: 'object', required: ['status', 'timestamp'], properties: { status: { type: 'string', enum: ['UP'] }, timestamp: { type: 'string', format: 'date-time' } }, example: { status: 'UP', timestamp: '2026-10-05T12:00:00.000Z' } } })
   checkHealth() { return { status: 'UP', timestamp: new Date().toISOString() }; }
+
+  @Roles('ADMIN')
+  @ApiBearerAuth('JWT-auth')
+  @Post(':id/paquetes')
+  @ApiOperation({ summary: 'Crear experiencia reservable', description: 'Requiere rol ADMIN.' })
+  @ApiUnauthorizedResponse({ description: 'JWT ausente o inválido.' })
+  @ApiForbiddenResponse({ description: 'Se requiere rol ADMIN.' })
+  @ApiBadRequestResponse({ description: 'UUID o datos inválidos.' })
+  @ApiNotFoundResponse({ description: 'Atracción o experiencia no encontrada.' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
+  @ApiCreatedResponse({ schema: { type: 'object', required: ['id'], properties: { id: { type: 'string', format: 'uuid' } } } })
+  savePackage(@Param('id', ParseUUIDPipe) id: string, @Body() dto: SaveExperienceDto) {
+    return this.atraccionesService.savePackage(id, dto);
+  }
+
+  @Roles('ADMIN')
+  @ApiBearerAuth('JWT-auth')
+  @Put(':id/paquetes/:packageId')
+  @ApiOperation({ summary: 'Editar experiencia reservable', description: 'Requiere rol ADMIN. Las reservas existentes conservan sus importes.' })
+  @ApiUnauthorizedResponse({ description: 'JWT ausente o inválido.' })
+  @ApiForbiddenResponse({ description: 'Se requiere rol ADMIN.' })
+  @ApiBadRequestResponse({ description: 'UUID o datos inválidos.' })
+  @ApiNotFoundResponse({ description: 'Atracción o experiencia no encontrada.' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
+  @ApiParam({ name: 'packageId', type: String, format: 'uuid' })
+  @ApiOkResponse({ schema: { type: 'object', required: ['id'], properties: { id: { type: 'string', format: 'uuid' } } } })
+  updatePackage(@Param('id', ParseUUIDPipe) id: string, @Param('packageId', ParseUUIDPipe) packageId: string, @Body() dto: SaveExperienceDto) {
+    return this.atraccionesService.savePackage(id, dto, packageId);
+  }
+
+  @Roles('ADMIN')
+  @ApiBearerAuth('JWT-auth')
+  @Put(':id/availability')
+  @ApiOperation({ summary: 'Configurar capacidad de un turno', description: 'Requiere rol ADMIN. No permite reducir la capacidad por debajo de los cupos reservados.' })
+  @ApiUnauthorizedResponse({ description: 'JWT ausente o inválido.' })
+  @ApiForbiddenResponse({ description: 'Se requiere rol ADMIN.' })
+  @ApiBadRequestResponse({ description: 'UUID o datos inválidos.' })
+  @ApiNotFoundResponse({ description: 'Atracción o experiencia no encontrada.' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
+  @ApiConflictResponse({ description: 'La capacidad es menor que los cupos reservados.' })
+  @ApiOkResponse({ schema: { type: 'object', properties: { id: { type: 'string', format: 'uuid' }, atraccionId: { type: 'string', format: 'uuid' }, fecha: { type: 'string', format: 'date' }, horaInicio: { type: 'string' }, capacidadTotal: { type: 'integer' }, cuposReservados: { type: 'integer' }, createdAt: { type: 'string', format: 'date-time' } } } })
+  saveSlot(@Param('id', ParseUUIDPipe) id: string, @Body() dto: SaveSlotDto) {
+    return this.atraccionesService.saveSlot(id, dto);
+  }
 
   @Public()
   @Get(':id/paquetes')

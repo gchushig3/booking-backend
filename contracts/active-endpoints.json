@@ -83,6 +83,34 @@
     ]
   },
   {
+    "method": "put",
+    "path": "/api/v1/atracciones/{id}/availability",
+    "controller": "AtraccionesController",
+    "handler": "saveSlot",
+    "public": false,
+    "roles": [
+      "ADMIN"
+    ],
+    "status": 200,
+    "inputs": [
+      {
+        "kind": 3,
+        "dto": "SaveSlotDto",
+        "fields": [
+          "capacidad_total",
+          "date",
+          "time"
+        ]
+      },
+      {
+        "kind": 5,
+        "name": "id",
+        "dto": "String",
+        "fields": []
+      }
+    ]
+  },
+  {
     "method": "get",
     "path": "/api/v1/atracciones/{id}/comentarios",
     "controller": "ComentariosController",
@@ -131,6 +159,42 @@
     ]
   },
   {
+    "method": "put",
+    "path": "/api/v1/atracciones/{id}/paquetes/{packageId}",
+    "controller": "AtraccionesController",
+    "handler": "updatePackage",
+    "public": false,
+    "roles": [
+      "ADMIN"
+    ],
+    "status": 200,
+    "inputs": [
+      {
+        "kind": 3,
+        "dto": "SaveExperienceDto",
+        "fields": [
+          "max_participantes",
+          "min_participantes",
+          "nombre_paquete",
+          "precio_unitario",
+          "tipo_experiencia"
+        ]
+      },
+      {
+        "kind": 5,
+        "name": "packageId",
+        "dto": "String",
+        "fields": []
+      },
+      {
+        "kind": 5,
+        "name": "id",
+        "dto": "String",
+        "fields": []
+      }
+    ]
+  },
+  {
     "method": "get",
     "path": "/api/v1/atracciones/{id}/paquetes",
     "controller": "AtraccionesController",
@@ -139,6 +203,36 @@
     "roles": [],
     "status": 200,
     "inputs": [
+      {
+        "kind": 5,
+        "name": "id",
+        "dto": "String",
+        "fields": []
+      }
+    ]
+  },
+  {
+    "method": "post",
+    "path": "/api/v1/atracciones/{id}/paquetes",
+    "controller": "AtraccionesController",
+    "handler": "savePackage",
+    "public": false,
+    "roles": [
+      "ADMIN"
+    ],
+    "status": 201,
+    "inputs": [
+      {
+        "kind": 3,
+        "dto": "SaveExperienceDto",
+        "fields": [
+          "max_participantes",
+          "min_participantes",
+          "nombre_paquete",
+          "precio_unitario",
+          "tipo_experiencia"
+        ]
+      },
       {
         "kind": 5,
         "name": "id",
@@ -439,7 +533,8 @@
         "fields": [
           "limit",
           "page",
-          "product_type"
+          "product_type",
+          "q"
         ]
       }
     ]

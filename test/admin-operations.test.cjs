@@ -35,6 +35,32 @@ test('ADMIN attraction CRUD and reservations remain operational in PostgreSQL', 
       for (const [method, route, payload] of [['POST', '/atracciones', body], ['PATCH', `/atracciones/${attractionId}`, { name: 'Denied mutation' }], ['PUT', `/atracciones/${attractionId}`, body], ['DELETE', `/atracciones/${attractionId}`]]) assert.equal((await request('CLIENTE', method, route, payload)).status, 403);
       assert.equal((await db.query('SELECT nombre FROM atracciones WHERE id=$1', [attractionId]))[0].nombre, body.name);
     });
+    await t.test('ADMIN configures experiences and dated slots without implicit availability', async () => {
+      const route = `/atracciones/${attractionId}`;
+      const experience = { nombre_paquete: 'Experience regression', tipo_experiencia: 'GUIDED_TOUR', precio_unitario: 25, min_participantes: 1, max_participantes: null };
+      const slot = { date: '2027-01-10', time: '11:00', capacidad_total: 10 };
+      assert.equal((await request('CLIENTE', 'POST', route + '/paquetes', experience)).status, 403);
+      assert.equal((await request('CLIENTE', 'PUT', route + '/availability', slot)).status, 403);
+      const created = await request('ADMIN', 'POST', route + '/paquetes', experience);
+      assert.equal(created.status, 201);
+      const packageId = (await created.json()).id;
+      assert.equal((await request('CLIENTE', 'PUT', route + '/paquetes/' + packageId, experience)).status, 403);
+      assert.equal((await request('ADMIN', 'PUT', route + '/paquetes/' + packageId, { ...experience, precio_unitario: 30 })).status, 200);
+      const packages = await (await request('ADMIN', 'GET', route + '/paquetes')).json();
+      assert.equal(packages[0].precio_unitario, 30);
+      assert.equal(packages[0].max_participantes, null);
+      assert.equal((await request('ADMIN', 'PUT', route + '/availability', slot)).status, 200);
+      const available = await (await request('ADMIN', 'GET', route + '/availability?date=2027-01-10&time=11:00')).json();
+      assert.equal(available.available_spots, 10);
+      const unconfigured = await (await request('ADMIN', 'GET', route + '/availability?date=2027-01-11&time=11:00')).json();
+      assert.equal(unconfigured.available_spots, 0);
+      assert.equal((await request('ADMIN', 'PUT', route + '/availability', { ...slot, capacidad_total: 0 })).status, 200);
+      const closed = await (await request('ADMIN', 'GET', route + '/availability?date=2027-01-10&time=11:00')).json();
+      assert.equal(closed.available_spots, 0);
+      const matches = await (await request('ADMIN', 'GET', '/atracciones?page=1&limit=10&q=' + encodeURIComponent(body.name))).json();
+      assert.equal(matches.meta.total, 1);
+      assert.equal(matches.data[0].id, attractionId);
+    });
     await t.test('ADMIN updates then deactivates without deleting the row', async () => {
       assert.equal((await request('ADMIN', 'PATCH', `/atracciones/${attractionId}`, { name: body.name + ' edited' })).status, 200);
       assert.equal((await request('ADMIN', 'DELETE', `/atracciones/${attractionId}`)).status, 204);

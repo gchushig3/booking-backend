@@ -44,7 +44,7 @@ test('OpenAPI documents every active attraction REST operation', async () => {
           assert.deepEqual(Object.keys(openapi.components.schemas[input.dto].properties).sort(), input.fields, `Swagger must match the DTO validation whitelist: ${input.dto}`);
         }
         if (input.kind === 4 && input.name) assert.ok(params.some(param => param.in === 'query' && param.name === input.name), `Missing query ${input.name}`);
-        if (input.kind === 4 && !input.name && input.dto === 'GetAtraccionesFilterDto') assert.deepEqual(params.filter(param => param.in === 'query').map(param => param.name).sort(), ['limit', 'page', 'product_type']);
+        if (input.kind === 4 && !input.name && input.dto === 'GetAtraccionesFilterDto') assert.deepEqual(params.filter(param => param.in === 'query').map(param => param.name).sort(), ['limit', 'page', 'product_type', 'q']);
       }
       assert.ok(operation.responses['429'], 'All mounted routes use the global throttler');
     }
@@ -57,6 +57,7 @@ test('OpenAPI documents every active attraction REST operation', async () => {
       ['post', '/api/v1/auth/register'], ['post', '/api/v1/auth/login'],
       ['post', '/api/v1/atracciones/search'], ['post', '/api/v1/atracciones/details'],
       ['post', '/api/v1/atracciones'], ['get', '/api/v1/atracciones'],
+      ['post', '/api/v1/atracciones/{id}/paquetes'], ['put', '/api/v1/atracciones/{id}/paquetes/{packageId}'], ['put', '/api/v1/atracciones/{id}/availability'],
       ['get', '/api/v1/atracciones/health'], ['get', '/api/v1/atracciones/{id}/paquetes'],
       ['get', '/api/v1/atracciones/reservations'], ['get', '/api/v1/atracciones/reservations/{reservationId}'],
       ['get', '/api/v1/atracciones/{id}'], ['get', '/api/v1/atracciones/{id}/availability'],

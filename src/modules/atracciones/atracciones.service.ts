@@ -1,7 +1,8 @@
+import { SaveExperienceDto, SaveSlotDto } from './dto/booking-settings.dto';
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException, ConflictException, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { createHash } from 'crypto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, DataSource, QueryFailedError } from 'typeorm';
+import { Repository, In, ILike, DataSource, QueryFailedError } from 'typeorm';
 
 import { Atraccion } from './entities/atraccion.entity';
 import { Reserva } from './entities/reserva.entity';
@@ -309,6 +310,7 @@ export class AtraccionesService implements OnModuleInit, OnModuleDestroy {
 
     const nuevaAtraccion = this.atraccionRepository.create({
       nombre: createAtraccionDto.name,
+      cuposTotales: 0, horariosDisponibles: [], tipoExperienciaPermitidos: [createAtraccionDto.product_type],
       descripcion: createAtraccionDto.long_description,
       ciudad: createAtraccionDto.locations?.[0]?.country ?? 'Quito',
       latitud: createAtraccionDto.locations?.[0]?.coordinates?.latitude ?? 0,
@@ -332,9 +334,9 @@ export class AtraccionesService implements OnModuleInit, OnModuleDestroy {
   }
 
   async findAll(query: GetAtraccionesFilterDto): Promise<AtraccionesListResponseDto> {
-    const { page = 1, limit = 100, product_type } = query;
+    const { page = 1, limit = 100, product_type, q } = query;
     const [data, total] = await this.atraccionRepository.findAndCount({
-      where: product_type ? { product_type } : {},
+      where: { ...(product_type ? { product_type } : {}), ...(q?.trim() ? { nombre: ILike('%' + q.trim().replace(/[\\%_]/g, '\\$&') + '%') } : {}) },
       take: limit,
       skip: (page - 1) * limit,
     });
@@ -458,7 +460,7 @@ export class AtraccionesService implements OnModuleInit, OnModuleDestroy {
     const remainingByTime = new Map(times.map((slot) => [slot, Math.max(0, capacity - reservas
       .filter((reservation) => reservation.time === slot)
       .reduce((total, reservation) => total + Number(reservation.ticket_count ?? 0), 0))]));
-    const availableSpots = time ? (remainingByTime.get(time) ?? 0) : Math.max(...remainingByTime.values());
+    const availableSpots = time ? (remainingByTime.get(time) ?? 0) : Math.max(0, ...remainingByTime.values());
 
     return {
       date,
@@ -635,6 +637,41 @@ export class AtraccionesService implements OnModuleInit, OnModuleDestroy {
 
   async getAttractionResponse(id: string): Promise<AtraccionResponseDto> {
     return this.mapAtraccionPayload(await this.findOne(id));
+  }
+
+  async savePackage(id: string, dto: SaveExperienceDto, packageId?: string) {
+    if (dto.max_participantes != null && dto.max_participantes < dto.min_participantes) throw new BadRequestException('El máximo debe ser mayor o igual al mínimo.');
+    return this.dataSource.transaction(async (manager) => {
+      const attractions = manager.getRepository(Atraccion);
+      const attraction = await attractions.findOne({ where: { id }, lock: { mode: 'pessimistic_write' } });
+      if (!attraction) throw new NotFoundException('Atracción no encontrada.');
+      const repo = manager.getRepository(PaqueteExperiencia);
+      const pkg = packageId ? await repo.findOne({ where: { id: packageId, atraccionId: id }, lock: { mode: 'pessimistic_write' } }) : repo.create({ atraccionId: id, politicasJson: {} });
+      if (!pkg) throw new NotFoundException('Experiencia no encontrada.');
+      Object.assign(pkg, { nombrePaquete: dto.nombre_paquete.trim(), tipoExperiencia: dto.tipo_experiencia, precioUnitario: String(dto.precio_unitario), minParticipantes: dto.min_participantes, maxParticipantes: dto.max_participantes ?? null });
+      attraction.tipoExperienciaPermitidos = [...new Set([...(attraction.tipoExperienciaPermitidos ?? []), dto.tipo_experiencia])];
+      await attractions.save(attraction);
+      await repo.save(pkg);
+      return { id: pkg.id };
+    });
+  }
+
+  async saveSlot(id: string, dto: SaveSlotDto) {
+    const parsed = new Date(dto.date + 'T00:00:00Z');
+    if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== dto.date) throw new BadRequestException('Fecha inválida.');
+    return this.dataSource.transaction(async (manager) => {
+      const attractions = manager.getRepository(Atraccion);
+      const attraction = await attractions.findOne({ where: { id }, lock: { mode: 'pessimistic_write' } });
+      if (!attraction) throw new NotFoundException('Atracción no encontrada.');
+      const repo = manager.getRepository(DisponibilidadTurno);
+      let slot = await repo.findOne({ where: { atraccionId: id, fecha: dto.date, horaInicio: dto.time }, lock: { mode: 'pessimistic_write' } });
+      if (!slot) slot = repo.create({ atraccionId: id, fecha: dto.date, horaInicio: dto.time, cuposReservados: 0 });
+      if (dto.capacidad_total < slot.cuposReservados) throw new ConflictException('La capacidad no puede ser menor que los cupos ya reservados.');
+      slot.capacidadTotal = dto.capacidad_total;
+      attraction.horariosDisponibles = [...new Set([...(attraction.horariosDisponibles ?? []), dto.time])];
+      await attractions.save(attraction);
+      return repo.save(slot);
+    });
   }
 
   async getPackages(attractionId: string): Promise<PaqueteExperienciaResponseDto[]> {
